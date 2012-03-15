@@ -1,0 +1,122 @@
+#!/usr/bin/env bash
+
+# version
+
+VERSION="0.0.1"
+
+# bookmarks dir
+
+DIR=~/Dropbox
+
+# bookmarks file
+
+BOOKMARKS=$DIR/bookmarks
+
+#
+# Output usage info
+#
+
+usage() {
+  cat <<EOF
+
+  Usage: bm [options] [cmd]
+
+  Commands:
+
+    # add a bookmark with the given url, description, and optional tags
+    add <url> [desc] [tag...]
+
+    # open the first bookmark matching <query>
+    open <query>
+
+    # search the bookmarks via full-text <query>
+    search <query>
+
+    # list bookmarks available
+    ls, list
+
+    # clear all bookmarks
+    clear
+
+  Options:
+
+     -V, --version   output bm version
+     -h, --help      output this help information
+
+EOF
+}
+
+#
+# Add a bookmark
+#
+#   <url> [description] [tag ...] 
+#
+
+save_bookmark() {
+  local url=$1
+  local desc=$2
+  local tags=${@:3}
+  echo
+  echo "  Added bookmark"
+  echo
+  echo "    url: $url"
+  echo "    description: $desc"
+  echo "    tags: $tags"
+  echo
+  echo "$url|$desc|$tags" >> $BOOKMARKS
+}
+
+#
+# List all bookmarks
+#
+
+list_bookmarks() {
+  echo
+  cat $BOOKMARKS \
+    | awk '
+    BEGIN { FS = "|" }
+    { printf "  \033[36m%28s\033[0m  %-30s \033[90m(%s)\033[0m\n", $1, $2, $3 }'
+  echo
+}
+
+#
+# Search all bookmarks with <query>
+#
+
+search_bookmarks() {
+  list_bookmarks | grep $1
+}
+
+#
+# Open first bookmark matching <query>
+#
+
+open_bookmark() {
+  cat $BOOKMARKS \
+    | grep $1 \
+    | cut -d '|' -f 1 \
+    | xargs open
+}
+
+#
+# Remove all bookmarks
+#
+
+clear_bookmarks() {
+  rm $BOOKMARKS
+}
+
+# parse args
+
+while test $# -ne 0; do
+  arg=$1; shift
+  case $arg in
+    -V|--version) echo $VERSION; exit ;;
+    -h|--help) usage; exit ;;
+    ls|list) list_bookmarks; exit ;;
+    search) search_bookmarks "$@"; exit ;;
+    open) open_bookmark "$@"; exit ;;
+    add) save_bookmark "$@"; exit ;;
+    clear) clear_bookmarks; exit ;;
+  esac
+done
