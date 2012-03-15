@@ -106,6 +106,13 @@ clear_bookmarks() {
   rm $BOOKMARKS
 }
 
+# no args
+
+if test $# -eq 0; then
+  list_bookmarks
+  exit
+fi
+
 # parse args
 
 while test $# -ne 0; do
@@ -118,5 +125,6 @@ while test $# -ne 0; do
     open) open_bookmark "$@"; exit ;;
     add) save_bookmark "$@"; exit ;;
     clear) clear_bookmarks; exit ;;
+    *) open_bookmark $arg; exit ;;
   esac
 done

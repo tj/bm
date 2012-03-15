@@ -19,19 +19,22 @@ Usage: bm [options] [cmd]
 Commands:
 
   # add a bookmark with the given url, description, and optional tags
-  add <url> [desc] [tag...]
+  $ bm add <url> [desc] [tag...]
 
   # open the first bookmark matching <query>
-  open <query>
+  $ bm open <query>
+  $ bm <query>
 
   # search the bookmarks via full-text <query>
-  search <query>
+  $ bm search <query>
 
   # list bookmarks available
-  ls, list
+  $ bm list
+  $ bm ls
+  $ bm
 
   # clear all bookmarks
-  clear
+  $ bm clear
 
 Options:
 
