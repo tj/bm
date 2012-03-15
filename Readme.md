@@ -22,7 +22,7 @@ $ make uninstall
 
   Search for design related bookmarks:
 
-    ![cli benchmarks](http://f.cl.ly/items/1r3t1r0T283D1V04133v/Screen%20Shot%202012-03-15%20at%204.43.11%20PM.png)
+  ![cli benchmarks](http://f.cl.ly/items/1r3t1r0T283D1V04133v/Screen%20Shot%202012-03-15%20at%204.43.11%20PM.png)
 
 ## Usage
 
