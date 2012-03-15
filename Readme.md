@@ -22,10 +22,7 @@ $ make uninstall
 
   Search for design related bookmarks:
 
-    $ bm search design
-
-                 https://kippt.com  bookmark management            (clean white design)
-         http://subtlepatterns.com  tiling background images       (design textures)
+    ![cli benchmarks](http://f.cl.ly/items/1r3t1r0T283D1V04133v/Screen%20Shot%202012-03-15%20at%204.43.11%20PM.png)
 
 ## Usage
 
