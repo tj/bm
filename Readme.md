@@ -1,7 +1,7 @@
 
 ## BM
 
-  Simple bash CLI benchmarks persisted by your _~/Dropbox_.
+  Simple bash CLI bookmarks persisted by your _~/Dropbox_.
 
 ## Install
 
@@ -22,7 +22,7 @@ $ make uninstall
 
   Search for design related bookmarks:
 
-  ![cli benchmarks](http://f.cl.ly/items/0s3M0T1B122L3W1C1L1U/Screen%20Shot%202012-03-15%20at%204.44.24%20PM.png)
+  ![cli bookmarks](http://f.cl.ly/items/0s3M0T1B122L3W1C1L1U/Screen%20Shot%202012-03-15%20at%204.44.24%20PM.png)
 
 ## Usage
 
