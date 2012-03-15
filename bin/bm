@@ -84,7 +84,9 @@ list_bookmarks() {
 #
 
 search_bookmarks() {
+  echo
   list_bookmarks | grep $1
+  echo
 }
 
 #

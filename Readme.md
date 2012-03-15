@@ -10,6 +10,23 @@ $ make install
 $ make uninstall
 ```
 
+## Example
+
+  Add a bookmark:
+  
+    $ bm add http://subtlepatterns.com "tiling background images" design textures
+
+  Open it later:
+
+    $ bm subtle
+
+  Search for design related bookmarks:
+
+    $ bm search design
+
+                 https://kippt.com  bookmark management            (clean white design)
+         http://subtlepatterns.com  tiling background images       (design textures)
+
 ## Usage
 
 ```
