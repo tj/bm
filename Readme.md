@@ -56,3 +56,14 @@ Options:
    -h, --help      output this help information
 
 ```
+
+## Dropbox
+
+  Later I'll make it so you can tweak the path, however for now the bookmarks are persisted to _~/Dropbox/bookmarks_:
+  
+```
+$ cat ~/Dropbox/bookmarks 
+https://kippt.com|bookmark management|clean white design
+http://subtlepatterns.com|tiling background images|design textures
+http://www.uiparade.com|ui component designs|design ui
+```
