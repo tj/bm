@@ -81,7 +81,8 @@ list_bookmarks() {
   cat $BOOKMARKS \
     | awk '
     BEGIN { FS = "|" }
-    { printf "  \033[36m%28s\033[0m  %-30s \033[90m(%s)\033[0m\n", $1, $2, $3 }'
+    { printf "  \033[36m%28s\033[0m  %-30s \033[90m(%s)\033[0m\n", $1, $2, $3 }' \
+    | sed 's/http:\/\///'
   echo
 }
 
