@@ -8,6 +8,10 @@ VERSION="0.2.0"
 
 DIR=~/Dropbox
 
+# thumbs cache
+
+THUMBS=$DIR/bookmark-thumbs
+
 # bookmarks file
 
 BOOKMARKS=$DIR/bookmarks
@@ -129,25 +133,54 @@ style() {
 <style>
   body {
     padding: 50px 0 5px 50px;
-    font: 12px Helvetica;
   }
   .bm {
     float: left;
-    margin: 5px;
-    padding: 5px;
+    margin: 10px;
+    padding: 1px;
     border: 1px solid #eee;
     border-bottom: 1px solid #ddd;
     -webkit-border-radius: 5px;
     -webkit-box-shadow: 0 0 5px #eee;
+    opacity: 1;
   }
-  p {
-    margin: 5px;
-  }
-  a {
-    color: #16acee;
+  .bm:hover {
+    opacity: .75;
   }
 </style>
 EOF
+}
+
+#
+# List urls
+#
+
+urls() {
+  cat $BOOKMARKS | cut -d '|' -f 1
+}
+
+#
+# Generate bookmark screenshots
+#
+
+create_bookmark_screenshots() {
+  local w2p=`which webkit2png`
+  local urls=`urls`
+
+  # thumbs dir
+  mkdir -p $THUMBS
+
+  # fetch thumbs
+  for url in $urls; do
+    local path=$THUMBS/`echo $url | md5`.png
+    if ! test -f $path; then
+      $w2p -C -o out.png $url
+      mv out.png-clipped.png $path
+      echo " ... added $path"
+    fi
+  done
+
+  rm -f out.png-{clipped,full,thumb}.png
 }
 
 #
@@ -155,21 +188,23 @@ EOF
 #
 
 view_bookmark_screenshots() {
+  create_bookmark_screenshots
+  local urls=`urls`
+
   style > /tmp/bm.html
 
-  cat $BOOKMARKS \
-    | awk 'BEGIN { FS = "|" }
-    {
-      printf "<div class=bm>\n"
-      printf "  <a href=\"%s\">\n", $1
-      printf "    <img width=200 height=150 src=\"https://api.url2png.com/v3/P4DE5D1C99D8EF/7bbb6e0d1b74fb0ae1d4f18b06320096/%sx%s/%s\" />\n", 200, 200, $1
-      printf "  </a>\n"
-      printf "  <p class=link><a href=\"%s\">%s</a></p>\n", $1, $1
-      printf "  <p class=desc>%s</p>\n", $2
-      printf "</div>\n"
-    }' \
-    >> /tmp/bm.html \
-    && open /tmp/bm.html
+  for url in $urls; do
+    local path=$THUMBS/`echo $url | md5`.png
+    echo "
+      <div class=bm>
+        <a href='$url'>
+          <img src='$path' />
+        </a>
+      </div>
+    " >> /tmp/bm.html
+  done
+
+  open /tmp/bm.html
 }
 
 #
@@ -178,6 +213,7 @@ view_bookmark_screenshots() {
 
 clear_bookmarks() {
   rm $BOOKMARKS
+  rm -fr $THUMBS
 }
 
 # no args
