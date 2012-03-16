@@ -47,6 +47,9 @@ Commands:
   $ bm ls
   $ bm
 
+  # view bookmark screenshots in your default browser
+  $ vm view
+
   # clear all bookmarks
   $ bm clear
 
