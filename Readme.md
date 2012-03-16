@@ -60,6 +60,7 @@ Options:
 
 ```
 
+<a name="screenshots" />
 ## Screenshots
 
   Run `bm view` to view the bookmark screenshots in your default browser,
