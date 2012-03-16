@@ -60,6 +60,14 @@ Options:
 
 ```
 
+## Screenshots
+
+  Run `bm view` to view the bookmark screenshots in your default browser,
+  currently a very experimental feature, and url2png puts lame watermarks on
+  the images, and it's pretty slow :(
+
+  ![bookmark screenshots](http://f.cl.ly/items/373G3j2Q0A07110p3f1d/Screen%20Shot%202012-03-15%20at%205.19.18%20PM.png)
+
 ## Dropbox
 
   Later I'll make it so you can tweak the path, however for now the bookmarks are persisted to _~/Dropbox/bookmarks_:
