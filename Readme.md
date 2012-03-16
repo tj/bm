@@ -49,6 +49,7 @@ Commands:
   $ bm
 
   # view bookmark screenshots in your default browser
+  $ vm view design
   $ vm view
 
   # clear all bookmarks
@@ -64,7 +65,7 @@ Options:
 <a name="screenshots" />
 ## Screenshots
 
-  Run `bm view` to view the bookmark screenshots in your default browser. This requires `webkit2png(1)` (`brew install webkit2png`).
+  Run `bm view [query]` to view the bookmark screenshots in your default browser. This requires `webkit2png(1)` (`brew install webkit2png`).
 
   ![bookmark screenshots](http://f.cl.ly/items/2Z3M2c033B031E3R071t/Screen%20Shot%202012-03-15%20at%207.55.57%20PM.png)
 

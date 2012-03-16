@@ -43,6 +43,7 @@ usage() {
     $ bm
 
     # view bookmark screenshots in your default browser
+    $ vm view design
     $ vm view
 
     # clear all bookmarks
@@ -156,7 +157,9 @@ EOF
 #
 
 urls() {
-  cat $BOOKMARKS | cut -d '|' -f 1
+  cat $BOOKMARKS \
+    | grep "$1" \
+    | cut -d '|' -f 1
 }
 
 #
@@ -198,7 +201,7 @@ create_bookmark_screenshots() {
 
 view_bookmark_screenshots() {
   create_bookmark_screenshots
-  local urls=`urls`
+  local urls=`urls "$1"`
 
   style > /tmp/bm.html
 
@@ -243,7 +246,7 @@ while test $# -ne 0; do
     search) search_bookmarks "$@"; exit ;;
     open) open_bookmark "$@"; exit ;;
     add) save_bookmark "$@"; exit ;;
-    view) view_bookmark_screenshots; exit ;;
+    view) view_bookmark_screenshots "$@"; exit ;;
     clear) clear_bookmarks; exit ;;
     *) open_bookmark $arg; exit ;;
   esac
