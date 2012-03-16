@@ -35,6 +35,9 @@ usage() {
     # list bookmarks available
     ls, list
 
+    # view bookmark screenshots in your default browser
+    view
+
     # clear all bookmarks
     clear
 
@@ -101,6 +104,58 @@ open_bookmark() {
 }
 
 #
+# Stylesheet
+#
+
+style() {
+  cat <<EOF
+<style>
+  body {
+    padding: 50px 0 5px 50px;
+    font: 12px Helvetica;
+  }
+  .bm {
+    float: left;
+    margin: 5px;
+    padding: 5px;
+    border: 1px solid #eee;
+    border-bottom: 1px solid #ddd;
+    -webkit-border-radius: 5px;
+    -webkit-box-shadow: 0 0 5px #eee;
+  }
+  p {
+    margin: 5px;
+  }
+  a {
+    color: #16acee;
+  }
+</style>
+EOF
+}
+
+#
+# View bookmark screenshots.
+#
+
+view_bookmark_screenshots() {
+  style > /tmp/bm.html
+
+  cat $BOOKMARKS \
+    | awk 'BEGIN { FS = "|" }
+    {
+      printf "<div class=bm>\n"
+      printf "  <a href=\"%s\">\n", $1
+      printf "    <img width=200 height=150 src=\"https://api.url2png.com/v3/P4DE5D1C99D8EF/7bbb6e0d1b74fb0ae1d4f18b06320096/%sx%s/%s\" />\n", 200, 200, $1
+      printf "  </a>\n"
+      printf "  <p class=link><a href=\"%s\">%s</a></p>\n", $1, $1
+      printf "  <p class=desc>%s</p>\n", $2
+      printf "</div>\n"
+    }' \
+    >> /tmp/bm.html \
+    && open /tmp/bm.html
+}
+
+#
 # Remove all bookmarks
 #
 
@@ -126,6 +181,7 @@ while test $# -ne 0; do
     search) search_bookmarks "$@"; exit ;;
     open) open_bookmark "$@"; exit ;;
     add) save_bookmark "$@"; exit ;;
+    view) view_bookmark_screenshots; exit ;;
     clear) clear_bookmarks; exit ;;
     *) open_bookmark $arg; exit ;;
   esac
