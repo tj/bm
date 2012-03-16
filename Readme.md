@@ -1,7 +1,8 @@
 
 ## BM
 
-  Simple bash CLI bookmarks persisted by your _~/Dropbox_.
+  Simple bash CLI bookmarks persisted by your _~/Dropbox_ sporting
+  a webkit2png driven html browser.
 
 ## Install
 
