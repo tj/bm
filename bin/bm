@@ -164,7 +164,16 @@ urls() {
 #
 
 create_bookmark_screenshots() {
-  local w2p=`which webkit2png`
+  which webkit2png > /dev/null
+
+  if test $? -ne 0; then
+    echo 
+    echo "  You need webkit2png(1) installed for this feature:"
+    echo "  $ brew install webkit2png"
+    echo 
+    exit
+  fi
+
   local urls=`urls`
 
   # thumbs dir
@@ -174,7 +183,7 @@ create_bookmark_screenshots() {
   for url in $urls; do
     local path=$THUMBS/`echo $url | md5`.png
     if ! test -f $path; then
-      $w2p -C -o out.png $url
+      webkit2png -C -o out.png $url
       mv out.png-clipped.png $path
       echo " ... added $path"
     fi
