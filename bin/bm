@@ -159,6 +159,14 @@ style() {
       , 0 1px 1px #4ee2ff
       , 0 1px 0 #fff;
   }
+  .bm:hover img {
+    opacity: 1;
+  }
+  .bm img {
+    opacity: .5;
+    -webkit-transition: opacity 200ms;
+    -moz-transition: opacity 200ms;
+  }
 </style>
 EOF
 }
