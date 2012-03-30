@@ -176,7 +176,7 @@ style() {
    }
    .bm img {
      width: 200px;
-     height: 150px
+     height: 150px;
      opacity: .5;
      -webkit-transition: opacity 200ms;
      -moz-transition: opacity 200ms;
