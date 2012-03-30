@@ -16,6 +16,10 @@ THUMBS=$DIR/bookmark-thumbs
 
 BOOKMARKS=$DIR/bookmarks
 
+# HTML file
+
+HTML=/tmp/bm.html
+
 #
 # Output usage info
 #
@@ -245,7 +249,8 @@ create_bookmark_screenshots() {
 view_bookmark_screenshots() {
   create_bookmark_screenshots
 
-  style > /tmp/bm.html
+  echo "<title>Bookmarks</title>" > $HTML
+  style >> $HTML
 
   (
     while read line; do
@@ -261,11 +266,11 @@ view_bookmark_screenshots() {
           </a>
           <p>$desc</p>
         </div>
-      " >> /tmp/bm.html
+      " >> $HTML
     done
   ) < $BOOKMARKS
 
-  open /tmp/bm.html
+  open $HTML
 }
 
 #
