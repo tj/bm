@@ -244,20 +244,25 @@ create_bookmark_screenshots() {
 
 view_bookmark_screenshots() {
   create_bookmark_screenshots
-  local urls=`urls "$1"`
 
   style > /tmp/bm.html
 
-  for url in $urls; do
-    local path=$THUMBS/`echo $url | md5`.png
-    echo "
-      <div class=bm>
-        <a href='$url'>
-          <img src='$path' />
-        </a>
-      </div>
-    " >> /tmp/bm.html
-  done
+  (
+    while read line; do
+      local url=`echo "$line" | cut -d '|' -f 1`
+      local desc=`echo "$line" | cut -d '|' -f 2`
+      local tags=`echo "$line" | cut -d '|' -f 3`
+      local path=$THUMBS/`echo $url | md5`.png
+      echo "
+        <div class=bm>
+          <a href='$url'>
+            <img src='$path' />
+          </a>
+          <p>$desc</p>
+        </div>
+      " >> /tmp/bm.html
+    done
+  ) < $BOOKMARKS
 
   open /tmp/bm.html
 }
