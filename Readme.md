@@ -1,8 +1,10 @@
 
 ## BM
 
-  Simple bash CLI bookmarks persisted by your _~/Dropbox_ sporting
-  a webkit2png driven html browser.
+  Simple bash CLI bookmarks persisted by your _~/Dropbox_, sporting
+  a webkit2png-driven html browser:
+
+  ![](http://cl.ly/FREx/Screen%20Shot%202012-03-29%20at%2011.15.14%20PM.png)
 
 ## Install
 
