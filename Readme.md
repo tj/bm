@@ -69,8 +69,6 @@ Options:
 
   Run `bm view [query]` to view the bookmark screenshots in your default browser. This requires `webkit2png(1)` (`brew install webkit2png`).
 
-  ![bookmark screenshots](http://f.cl.ly/items/2Z3M2c033B031E3R071t/Screen%20Shot%202012-03-15%20at%207.55.57%20PM.png)
-
 ## Dropbox
 
   Later I'll make it so you can tweak the path, however for now the bookmarks are persisted to _~/Dropbox/bookmarks_:
