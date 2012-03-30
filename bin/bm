@@ -249,6 +249,7 @@ view_bookmark_screenshots() {
 
   (
     while read line; do
+      # TODO: slow... refactor
       local url=`echo "$line" | cut -d '|' -f 1`
       local desc=`echo "$line" | cut -d '|' -f 2`
       local tags=`echo "$line" | cut -d '|' -f 3`
