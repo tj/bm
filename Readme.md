@@ -1,4 +1,3 @@
-
 <a name="bm" />
 ## BM
 
@@ -55,8 +54,8 @@ Commands:
   $ bm
 
   # view bookmark screenshots in your default browser
-  $ vm view design
-  $ vm view
+  $ bm view design
+  $ bm view
 
   # clear all bookmarks
   $ bm clear
