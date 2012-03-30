@@ -132,41 +132,65 @@ open_bookmark() {
 style() {
   cat <<EOF
 <style>
-  body {
-    padding: 50px 0 5px 50px;
-    background: url(http://subtlepatterns.com/patterns/black-Linen.png);
-  }
-  .bm {
-    float: left;
-    margin: 15px;
-    padding: 1px;
-    opacity: 1;
-    border: 15px solid black;
-    -webkit-border-radius: 5px;
-    -moz-border-radius: 5px;
-    -webkit-transition: -webkit-box-shadow 600ms;
-    -moz-transition: -webkit-box-shadow 600ms;
-    -webkit-box-shadow: 0 0 1px 0 #555, 0 0 10px rgba(0,0,0,.5);
-    -moz-box-shadow: 0 0 1px 0 #555, 0 0 10px rgba(0,0,0,.5);
-  }
-  .bm:hover {
-    -webkit-box-shadow: 0 0 40px #1ab0ff
-      , 0 0 3px #06bdff
-      , 0 1px 1px #4ee2ff
-      , 0 1px 0 #fff;
-    -moz-box-shadow: 0 0 40px #1ab0ff
-      , 0 0 3px #06bdff
-      , 0 1px 1px #4ee2ff
-      , 0 1px 0 #fff;
-  }
-  .bm:hover img {
-    opacity: 1;
-  }
-  .bm img {
-    opacity: .5;
-    -webkit-transition: opacity 200ms;
-    -moz-transition: opacity 200ms;
-  }
+  * {
+     -webkit-box-sizing: border-box;
+     -moz-box-sizing: border-box;
+     box-sizing: border-box;
+   }
+   body {
+     padding: 50px 0 5px 50px;
+     background: url(http://subtlepatterns.com/patterns/black-Linen.png);
+     font: 12px "Helvetica Neue", Helvetica, Arial, sans-serif;
+   }
+   .bm {
+     position: relative;
+     float: left;
+     margin: 15px;
+     padding: 1px;
+     opacity: 1;
+     border: 15px solid black;
+     -webkit-border-radius: 5px;
+     -moz-border-radius: 5px;
+     -webkit-transition: -webkit-box-shadow 600ms;
+     -moz-transition: -webkit-box-shadow 600ms;
+     -webkit-box-shadow: 0 0 1px 0 #555, 0 0 10px rgba(0,0,0,.5);
+     -moz-box-shadow: 0 0 1px 0 #555, 0 0 10px rgba(0,0,0,.5);
+     overflow: hidden;
+   }
+   .bm:hover {
+     -webkit-box-shadow: 0 0 40px #1ab0ff
+       , 0 0 3px #06bdff
+       , 0 1px 1px #4ee2ff
+       , 0 1px 0 #fff;
+     -moz-box-shadow: 0 0 40px #1ab0ff
+       , 0 0 3px #06bdff
+       , 0 1px 1px #4ee2ff
+       , 0 1px 0 #fff;
+   }
+   .bm:hover img {
+     opacity: 1;
+   }
+   .bm img {
+     opacity: .5;
+     -webkit-transition: opacity 200ms;
+     -moz-transition: opacity 200ms;
+   }
+   .bm p {
+     margin: 0;
+     padding: 10px;
+     width: 100%;
+     background: rgba(0,0,0,.75);
+     position: absolute;
+     left: 0;
+     color: white;
+     letter-spacing: 1px;
+     bottom: -50px;
+     -webkit-font-smoothing: antialiased;
+     -webkit-transition: bottom 200ms ease-in;
+   }
+   .bm:hover p {
+     bottom: 0;
+   }
 </style>
 EOF
 }
