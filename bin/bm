@@ -270,7 +270,7 @@ view_bookmark_screenshots() {
         </div>
       " >> $HTML
     done
-  ) < $BOOKMARKS
+  ) < <(cat $BOOKMARKS | sed -n "/${1}/p")
 
   open $HTML
 }
