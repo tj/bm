@@ -245,7 +245,7 @@ create_bookmark_screenshots() {
 }
 
 #
-# View bookmark screenshots.
+# View bookmark screenshots grep <pattern>
 #
 
 view_bookmark_screenshots() {
@@ -270,7 +270,7 @@ view_bookmark_screenshots() {
         </div>
       " >> $HTML
     done
-  ) < $BOOKMARKS
+  ) < <(cat $BOOKMARKS | grep "$1")
 
   open $HTML
 }
