@@ -138,8 +138,8 @@ open_bookmark() {
 #
 
 show_statistics() {
-  local total_bookmarks=`cat $BOOKMARKS | wc -l`
-  local total_tags=`tags | wc -l`
+  local total_bookmarks=$(cat $BOOKMARKS | wc -l | sed 's/^ *//')
+  local total_tags=$(tags | wc -l | sed 's/^ *//')
 
   echo
   echo "  Bookmark Statistics"
