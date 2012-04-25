@@ -168,12 +168,11 @@ tags() {
 #
 
 display_top_ten_tags() {
-  local tags=`tags \
-      | head -10 \
-      | awk '{ printf("%20d  %s\n", $1, $2) }'`
   echo
   printf "%20s  %s\n" count tag
-  echo "$tags"
+  tags \
+    | head -10 \
+    | awk '{ printf("%20d  %s\n", $1, $2) }'
 }
 
 
