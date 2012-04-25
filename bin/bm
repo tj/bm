@@ -139,7 +139,7 @@ open_bookmark() {
 
 show_statistics() {
   local total_bookmarks=$(cat $BOOKMARKS | wc -l | sed 's/^ *//')
-  local total_tags=$(tags | wc -l | sed 's/^ *//')
+  local total_tags=$(list_tags | wc -l | sed 's/^ *//')
 
   echo
   echo "    total bookmarks: $total_bookmarks"
@@ -152,7 +152,7 @@ show_statistics() {
 # Output tags.
 #
 
-tags() {
+list_tags() {
   cat $BOOKMARKS \
     | cut -f3 -d '|' \
     | tr " " "\n" \
@@ -168,7 +168,7 @@ tags() {
 display_top_ten_tags() {
   echo
   printf "%20s  %s\n" count tag
-  tags \
+  list_tags \
     | head -10 \
     | awk '{ printf("%20d  %s\n", $1, $2) }'
 }
@@ -343,6 +343,7 @@ while test $# -ne 0; do
   case $arg in
     -V|--version) echo $VERSION; exit ;;
     -h|--help) usage; exit ;;
+    tags) list_tags; exit ;;
     ls|list) list_bookmarks; exit ;;
     search) search_bookmarks "$@"; exit ;;
     open) open_bookmark "$@"; exit ;;
