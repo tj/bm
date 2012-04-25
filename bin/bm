@@ -142,8 +142,6 @@ show_statistics() {
   local total_tags=$(tags | wc -l | sed 's/^ *//')
 
   echo
-  echo "  Bookmark Statistics"
-  echo
   echo "    total bookmarks: $total_bookmarks"
   echo "         total tags: $total_tags"
   echo "        top 10 tags: `display_top_ten_tags`"
