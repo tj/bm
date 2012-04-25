@@ -41,6 +41,9 @@ usage() {
     # search the bookmarks via full-text <query>
     $ bm search <query>
 
+    # list tags
+    $ bm tags
+
     # list bookmarks available
     $ bm list
     $ bm ls
