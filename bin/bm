@@ -132,9 +132,11 @@ open_bookmark() {
     | cut -d '|' -f 1 \
     | xargs open
 }
+
 #
 # Diplay some statistics about the bookmarks
 #
+
 show_statistics() {
   local total_bookmarks=`cat $BOOKMARKS | wc -l`
   local total_tags=`tags | wc -l`
@@ -148,6 +150,10 @@ show_statistics() {
   echo
 }
 
+#
+# Output tags.
+#
+
 tags() {
   cat $BOOKMARKS \
     | cut -f3 -d '|' \
@@ -160,13 +166,14 @@ tags() {
 # 
 # Display the 10 most frequently used tags
 #
+
 display_top_ten_tags() {
-  local top10tags=`tags \
+  local tags=`tags \
       | head -10 \
-      | awk '{ printf("\t\t%5d  %s\n", $1, $2) }'`
+      | awk '{ printf("%20d  %s\n", $1, $2) }'`
   echo
-  echo -e "\\t\\tcount  tag"
-  echo "$top10tags"
+  printf "%20s  %s\n" count tag
+  echo "$tags"
 }
 
 
