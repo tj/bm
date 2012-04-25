@@ -46,6 +46,10 @@ usage() {
     $ bm ls
     $ bm
 
+    # display statistics about the bookmarks
+    $ bm statistics
+    $ bm stats
+
     # view bookmark screenshots in your default browser
     $ vm view design
     $ vm view
@@ -128,6 +132,43 @@ open_bookmark() {
     | cut -d '|' -f 1 \
     | xargs open
 }
+#
+# Diplay some statistics about the bookmarks
+#
+show_statistics() {
+  local total_bookmarks=`cat $BOOKMARKS | wc -l`
+  local total_tags=`tags | wc -l`
+
+  echo
+  echo "  Bookmark Statistics"
+  echo
+  echo "    total bookmarks: $total_bookmarks"
+  echo "         total tags: $total_tags"
+  echo "        top 10 tags: `display_top_ten_tags`"
+  echo
+}
+
+tags() {
+  cat $BOOKMARKS \
+    | cut -f3 -d '|' \
+    | tr " " "\n" \
+    | sort \
+    | uniq -c \
+    | sort -nr
+}
+
+# 
+# Display the 10 most frequently used tags
+#
+display_top_ten_tags() {
+  local top10tags=`tags \
+      | head -10 \
+      | awk '{ printf("\t\t%5d  %s\n", $1, $2) }'`
+  echo
+  echo -e "\\t\\tcount  tag"
+  echo "$top10tags"
+}
+
 
 #
 # Stylesheet
@@ -303,6 +344,7 @@ while test $# -ne 0; do
     open) open_bookmark "$@"; exit ;;
     add) save_bookmark "$@"; exit ;;
     view) view_bookmark_screenshots "$@"; exit ;;
+    stats|statistics) show_statistics; exit ;;
     clear) clear_bookmarks; exit ;;
     *) open_bookmark $arg; exit ;;
   esac
