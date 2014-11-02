@@ -130,10 +130,17 @@ search_bookmarks() {
 #
 
 open_bookmark() {
+  if [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then #Linx
+    local open_cmd="xdg-open"
+  elif [ "$(expr substr $(uname -s) 1 10)" == "MINGW32_NT" ]; then #Windows
+    local open_cmd="cmd /c start"
+  else
+    local open_cmd="open"
+  fi
   cat $BOOKMARKS \
     | grep $1 \
     | cut -d '|' -f 1 \
-    | xargs open
+    | xargs $open_cmd
 }
 
 #
