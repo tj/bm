@@ -254,9 +254,7 @@ EOF
 #
 
 urls() {
-  cat $BOOKMARKS \
-    | grep "$1" \
-    | cut -d '|' -f 1
+  cat $BOOKMARKS | grep "$1" | cut -d '|' -f 1
 }
 
 #
