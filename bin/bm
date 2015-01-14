@@ -342,16 +342,60 @@ fi
 while test $# -ne 0; do
   arg=$1; shift
   case $arg in
-    -V|--version) echo $VERSION; exit ;;
-    -h|--help) usage; exit ;;
-    tags) list_tags; exit ;;
-    ls|list) list_bookmarks; exit ;;
-    search) search_bookmarks "$@"; exit ;;
-    open) open_bookmark "$@"; exit ;;
-    add) save_bookmark "$@"; exit ;;
-    view) view_bookmark_screenshots "$@"; exit ;;
-    stats|statistics) show_statistics; exit ;;
-    clear) clear_bookmarks; exit ;;
-    *) open_bookmark $arg; exit ;;
+    -V|--version)
+        echo $VERSION
+        exit
+        ;;
+
+    -h|--help)
+        usage
+        exit
+        ;;
+
+    tags)
+        list_tags
+        exit
+        ;;
+
+    ls|list)
+        list_bookmarks
+        exit
+        ;;
+
+    search)
+        search_bookmarks "$@"
+        exit
+        ;;
+
+    open)
+        open_bookmark "$@"
+        exit
+        ;;
+
+    add)
+        save_bookmark "$@"
+        exit
+        ;;
+
+    view)
+        view_bookmark_screenshots "$@"
+        exit
+        ;;
+
+    stats|statistics)
+        show_statistics
+        exit
+        ;;
+
+    clear)
+        clear_bookmarks
+        exit
+        ;;
+
+    *) open_bookmark
+        $arg
+        exit
+        ;;
+
   esac
 done
