@@ -71,7 +71,7 @@ EOF
 #
 # Add a bookmark
 #
-#   <url> [description] [tag ...] 
+#   <url> [description] [tag ...]
 #
 
 save_bookmark() {
@@ -164,7 +164,7 @@ list_tags() {
     | sort -nr
 }
 
-# 
+#
 # Display the 10 most frequently used tags
 #
 
@@ -267,10 +267,10 @@ create_bookmark_screenshots() {
   which webkit2png > /dev/null
 
   if test $? -ne 0; then
-    echo 
+    echo
     echo "  You need webkit2png(1) installed for this feature:"
     echo "  $ brew install webkit2png"
-    echo 
+    echo
     exit
   fi
 
