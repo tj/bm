@@ -6,7 +6,7 @@ VERSION="0.4.1"
 
 # bookmarks dir
 
-DIR=~/Dropbox
+DIR=${BM_DIR:-~/Dropbox}
 
 # thumbs cache
 
