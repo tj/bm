@@ -2,7 +2,7 @@
 PREFIX=/usr/local
 
 install:
-	cp -f bin/bm $(PREFIX)/bin/bm
+	cp -f bm $(PREFIX)/bin/bm
 
 uninstall:
 	rm -f $(PREFIX)/bin/bm
