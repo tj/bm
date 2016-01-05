@@ -284,6 +284,7 @@ create_bookmark_screenshots() {
     local path=$THUMBS/`echo $url | md5`.png
     if ! test -f $path; then
       webkit2png -C -o out.png $url
+# cutycapt --out="out.png" --url="$url"
       mv out.png-clipped.png $path
       echo " ... added $path"
     fi
@@ -357,3 +358,18 @@ while test $# -ne 0; do
     *) open_bookmark $arg; exit ;;
   esac
 done
+
+
+
+# Check du sed
+# echo toto > fichier
+# sed -i.bak -s 's;toto;tata;' fichier
+# grep tata c'est ok sinon pas top
+# rm des 2 fichiers
+
+# Il doit y avoir un default tag
+
+# Header :
+# + counter URLs open
+# + counter URLs copied
+# + counter URLs deleted
