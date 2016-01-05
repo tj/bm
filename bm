@@ -2,7 +2,7 @@
 
 # version
 
-VERSION="0.4.1"
+VERSION="0.4.1-Flyou"
 
 # bookmarks dir
 
@@ -76,6 +76,7 @@ EOF
 
 save_bookmark() {
   local url=$1
+	local _sum="$(md5sum <<< "${url}")"
   local desc=$2
   local tags=${@:3}
   echo
@@ -85,7 +86,7 @@ save_bookmark() {
   echo "    description: $desc"
   echo "    tags: $tags"
   echo
-  echo "$url|$desc|$tags" >> $BOOKMARKS
+  echo "${_sum%% *}|$url|$desc|$tags" >> $BOOKMARKS
 }
 
 #
@@ -98,11 +99,11 @@ list_bookmarks() {
     | awk '
     BEGIN { FS = "|" }
     {
-      printf "  \033[36m%s\033[0m\n", $1
-      printf "  \033[33m%s\033[0m\n", $2
-      printf "  \033[90m%s\033[0m\n\n", $3
+      printf "  \033[36m%s\033[0m\n", $2
+      printf "  \033[33m%s\033[0m\n", $3
+      printf "  \033[90m%s\033[0m\n\n", $4
     }' \
-    | sed 's/http:\/\///'
+    | sed 's/^[[:space:]]*\(f\|ht\)tps*:\/\///'
   echo
 }
 
@@ -117,11 +118,11 @@ search_bookmarks() {
     | awk '
     BEGIN { FS = "|" }
     {
-      printf "  \033[36m%s\033[0m\n", $1
-      printf "  \033[33m%s\033[0m\n", $2
-      printf "  \033[90m%s\033[0m\n\n", $3
+      printf "  \033[36m%s\033[0m\n", $2
+      printf "  \033[33m%s\033[0m\n", $3
+      printf "  \033[90m%s\033[0m\n\n", $4
     }' \
-    | sed 's/http:\/\///'
+    | sed 's/^[[:space:]]*\(f\|ht\)tps*:\/\///'
   echo
 }
 
@@ -132,7 +133,7 @@ search_bookmarks() {
 open_bookmark() {
   cat $BOOKMARKS \
     | grep $1 \
-    | cut -d '|' -f 1 \
+    | cut -d '|' -f 2 \
     | xargs open
 }
 
@@ -157,7 +158,7 @@ show_statistics() {
 
 list_tags() {
   cat $BOOKMARKS \
-    | cut -f3 -d '|' \
+    | cut -f4 -d '|' \
     | tr " " "\n" \
     | sort \
     | uniq -c \
@@ -256,7 +257,7 @@ EOF
 urls() {
   cat $BOOKMARKS \
     | grep "$1" \
-    | cut -d '|' -f 1
+    | cut -d '|' -f 2
 }
 
 #
@@ -306,9 +307,9 @@ view_bookmark_screenshots() {
   (
     while read line; do
       # TODO: slow... refactor
-      local url=`echo "$line" | cut -d '|' -f 1`
-      local desc=`echo "$line" | cut -d '|' -f 2`
-      local tags=`echo "$line" | cut -d '|' -f 3`
+      local url=`echo "$line" | cut -d '|' -f 2`
+      local desc=`echo "$line" | cut -d '|' -f 3`
+      local tags=`echo "$line" | cut -d '|' -f 4`
       local path=$THUMBS/`echo $url | md5`.png
       echo "
         <div class=bm>
