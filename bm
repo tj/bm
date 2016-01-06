@@ -1,5 +1,85 @@
 #!/usr/bin/env bash
 
+# default filename for Baker config file (just the filename no path)
+readonly DEFAULT_CONFIG_FILENAME="${DEFAULT_CONFIG_FILENAME:=bm.conf}"
+
+
+
+
+
+config() {
+	echo "Reading Configuration..." >&2
+	[[ "${__w:=$HOME}" != "${HOME}" ]] && echo "Working dir changed to ${__w}"
+	[[ "${__w: -1}" != '/' ]] && __w="${__w//\/\//\/}/"
+	# If a config file is given, we take it first, or look for a default config file
+	if [ -f "$(readlink -m "${1:-}")" ]; then
+		. "${1}"
+	elif [ ${__n:=0} -eq 0 -a -f "${__w}${DEFAULT_CONFIG_FILENAME}" ]; then
+		. "${__w}${DEFAULT_CONFIG_FILENAME}"
+		echo "Default config file loaded ${__w}${DEFAULT_CONFIG_FILENAME}"
+	fi
+
+	# DELETE_ALLOWED : Even with the force flag the delete function will not be allowed (true or false)
+	export DELETE_ALLOWED=${DELETE_ALLOWED:=true}
+
+	# DELETE_TO_FILE : Allow or disallow the deleted URLs to be copied in the Trash (true or false)
+	export DELETE_TO_FILE=${DELETE_TO_FILE:=true}
+
+	# DELETE_FILE : Where to find the deleted URLs
+	export DELETE_FILE="${DELETE_FILE:=${__w}.bm.trash}"
+
+	# BOOKMARK_FILE : Where is stored the bookmark file
+	export BOOKARK_FILE="${BOOKMARK_FILE:=${__w}bm.lnk}"
+
+	# DUPS_DETECT : Look for duplicates URL before insert in bookmark file
+	export DUPS_DETECT=${DUPS_DETECT:=true}
+
+	# ASK_BEFORE_OPEN : When using bm with a URL (or search term) ask before opening the browser if more than one answer
+	export ASK_BEFORE_OPEN=${ASK_BEFORE_OPEN:=true}
+
+	# GET_PAGE_TITLE : When adding a URL execute a curl command to get the <title> if none given
+	export GET_PAGE_TITLE=${GET_PAGE_TITLE:=true}
+
+	# GET_SCREENSHOT : When adding a URL try to take a screenshot in background
+	export GET_SCREENSHOT=${GET_SCREENSHOT:=true}
+
+	# WAIT_SCREENSHOT : When taking a screenshot wait for the action to finish
+	export WAIT_SCREENSHOT=${WAIT_SCREENSHOT:=false}
+
+	# HTML_FILE : Location of generated HTML file
+	export HTML_FILE="${HTML_FILE:=${__w}bm.html}"
+
+	# OPEN_FIRST : When using open, the first link found is open
+	#              Also work with the copy to clipboard function
+	export OPEN_FIRST="${OPEN_FIRST:=${__y:=0}}"
+
+	# 
+}
+
+
+# headers prints the header of a markdown file
+getHeaders() {
+        awk '/^---$/ { c++; next } c == 1'
+}
+
+# header prints a specific header value
+getHeader() {
+        getHeaders | sed -e '/^[[:space:]]*'"${1}"'[[:space:]]*:/!d;s/[[:space:]]*'"${1}"'[[:space:]]*:[[:space:]]*\(.*\)/\1/g'
+}
+
+# body prints the body of a markdown file
+getBody() {
+        awk '/^---$/ { c++; next } c >= 2'
+}
+
+# slug creates a friendly URL like 'hello-world'
+slug() {
+        iconv -f utf8 -t ascii//TRANSLIT | tr -cs '[:alnum:]\n' - | tr '[:upper:]' '[:lower:]' | sed 's|^-*||;s|-*$||'
+}
+
+
+
+
 # version
 
 VERSION="0.4.1-Flyou"
@@ -64,6 +144,22 @@ usage() {
 
      -V, --version   output bm version
      -h, --help      output this help information
+
+Usage: ${0} command [option(s)]
+
+	Commands :
+	-a 'URL'	Add the URL to bookmark file
+			Options for -a
+			-t "TagList"	Tags are sparated by a comma ,
+			-T "Title"	Title for this URL (if empty and allowed Title
+					downloaded)
+			-A "accel"	Accelerator when search for URLs (start with Accel)
+					Default is FQDN without gTld (and www, and sheme)
+
+	-d 'URL' or	Delete the URL from bookmark file
+	   md5sum or
+	   'part of the URL'
+
 
 EOF
 }
@@ -334,6 +430,41 @@ clear_bookmarks() {
   rm -fr $THUMBS
 }
 
+
+#
+# Check System to find corect binaries
+#
+
+check_binaries() {
+	
+}
+# checkBinaries check the script is able to run and give hints
+checkBinaries() {
+	local cmdErr="sed awk date iconv head cat"
+	set ${cmdErr}
+	while [ ${#} -ne 0 ]; do
+		if ! command -v "${1:-}" &>/dev/null; then
+			echo "command not found: ${1}" >&2
+			local rc=1
+		fi
+		shift
+	done
+	[[ ${rc:=0} -ne 0 ]] && die "At least one command is missing. Please install it before using bm."
+	# Checking sed 
+	local rc=1
+	[[ ! -f "/tmp/sedtest.$$" ]] && \
+	echo 'toto' > "/tmp/sedtest.$$" && \
+	sed -i.bak 's;^toto$/tata/' && \
+	[[ -f "/tmp/sedtest.$$.bak" ]] && \
+	grep -q "tata" "/tmp/sedtest.$$" && \
+	rc=0 && \
+	rm -f "/tmp/sedtest.$$" "/tmp/sedtest.$$.bak"
+	[[ ${rc} -ne 0 ]] && die "sed seems to not handle -i arguent properly, please check"
+}
+
+checkBinaries
+
+
 # no args
 
 if test $# -eq 0; then
@@ -360,7 +491,54 @@ while test $# -ne 0; do
   esac
 done
 
+exit 0
 
+##################### TRANSITIONNAL ############################
+
+_regex='^(tags|ls|list|searxh|open|add|view|stats|statistics|clear)$'
+if [[ ${1:-} =~ ${_regex} ]]; then
+        case "$1" in
+                bake) __b=1 ;;
+                post) __p=1; __post="${@:2}" ;;
+                list) __l=1;;
+                toggle) __t=1; __post="${@:2}" ;;
+                date) __d=1; __post="${@:2}" ;;
+                rename) __r=1; __post="${@:2}" ;;
+                *) usage ;;
+        esac
+else
+        # used      : -----c--------Hh--------------------------V------y------------
+        # available : AaBbC-DdEeFfGg--IiJjKkLlMmNnOoPpQqRrSsTtUu-vWwXxY-Zz0123456789
+        while getopts ":d:f:p:r:s:S:w:bDhHlntxX" option; do
+                case ${option} in
+                        c) __c="${OPTARG}";;
+			y) __y=1;;
+			V) echo "${0} v${VERSION}"; exit 0;;
+                        ?|H|h) usage; exit 0;;
+                        *) echo "Argument unknown" >&2; usage;;
+
+
+
+
+                        b) __b=1;;
+                        d) __d=1;__post="${OPTARG}";;
+                        D) __D=1;;
+                        l) __l=1;;
+                        f) __f="${OPTARG}";;
+                        n) __n=1;;
+                        p) __p=1;__post="${OPTARG}";;
+                        r) __r=1;__post="${OPTARG}";;
+                        s) __s=1;__post="${OPTARG}";;
+                        S) [[ "${OPTARG,,}" =~ ^(user|all|none)$ ]] || die "Argument '${OPTARG}' unknown."; export PRINT_ALL_SUMMARY="${OPTARG,,}";;
+                        t) __t=1;;
+                        w) [[ -d "${OPTARG}" ]] && __w="$( cd ${OPTARG}; pwd)/";;
+                        x) __x=1;;
+                        X) __X=1;;
+                esac
+        done
+fi
+
+config "${__c}"
 
 # Check du sed
 # echo toto > fichier
