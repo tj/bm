@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # default filename for Baker config file (just the filename no path)
-readonly DEFAULT_CONFIG_FILENAME="${DEFAULT_CONFIG_FILENAME:=bm.conf}"
+readonly _BM_DEFAULT_CONFIG_FILENAME="${_BM_DEFAULT_CONFIG_FILENAME:=bm.conf}"
 
 
 
@@ -14,46 +14,47 @@ config() {
 	# If a config file is given, we take it first, or look for a default config file
 	if [ -f "$(readlink -m "${1:-}")" ]; then
 		. "${1}"
-	elif [ ${__n:=0} -eq 0 -a -f "${__w}${DEFAULT_CONFIG_FILENAME}" ]; then
-		. "${__w}${DEFAULT_CONFIG_FILENAME}"
-		echo "Default config file loaded ${__w}${DEFAULT_CONFIG_FILENAME}"
+	elif [ ${__n:=0} -eq 0 -a -f "${__w}${_BM_DEFAULT_CONFIG_FILENAME}" ]; then
+		. "${__w}${_BM_DEFAULT_CONFIG_FILENAME}"
+		echo "Default config file loaded ${__w}${_BM_DEFAULT_CONFIG_FILENAME}"
 	fi
 
-	# DELETE_ALLOWED : Even with the force flag the delete function will not be allowed (true or false)
-	export DELETE_ALLOWED=${DELETE_ALLOWED:=true}
+	# _BM_DELETE_ALLOWED : Even with the force flag the delete function will not be allowed (true or false)
+	export _BM_DELETE_ALLOWED=${_BM_DELETE_ALLOWED:=true}
 
-	# DELETE_TO_FILE : Allow or disallow the deleted URLs to be copied in the Trash (true or false)
-	export DELETE_TO_FILE=${DELETE_TO_FILE:=true}
+	# _BM_DELETE_TO_FILE : Allow or disallow the deleted URLs to be copied in the Trash (true or false)
+	export _BM_DELETE_TO_FILE=${_BM_DELETE_TO_FILE:=true}
 
-	# DELETE_FILE : Where to find the deleted URLs
-	export DELETE_FILE="${DELETE_FILE:=${__w}.bm.trash}"
+	# _BM_DELETE_FILE : Where to find the deleted URLs
+	export _BM_DELETE_FILE="${_BM_DELETE_FILE:=${__w}.bm.trash}"
 
-	# BOOKMARK_FILE : Where is stored the bookmark file
-	export BOOKARK_FILE="${BOOKMARK_FILE:=${__w}bm.lnk}"
+	# _BM_BOOKMARK_FILE : Where is stored the bookmark file
+	export _BM_BOOKARK_FILE="${_BM_BOOKMARK_FILE:=${__w}bm.lnk}"
 
-	# DUPS_DETECT : Look for duplicates URL before insert in bookmark file
-	export DUPS_DETECT=${DUPS_DETECT:=true}
+	# _BM_DUPS_DETECT : Look for duplicates URL before insert in bookmark file
+	export _BM_DUPS_DETECT=${_BM_DUPS_DETECT:=true}
 
-	# ASK_BEFORE_OPEN : When using bm with a URL (or search term) ask before opening the browser if more than one answer
-	export ASK_BEFORE_OPEN=${ASK_BEFORE_OPEN:=true}
+	# _BM_ASK_BEFORE_OPEN : When using bm with a URL (or search term) ask before opening the browser if more than one answer
+	export _BM_ASK_BEFORE_OPEN=${_BM_ASK_BEFORE_OPEN:=true}
 
-	# GET_PAGE_TITLE : When adding a URL execute a curl command to get the <title> if none given
-	export GET_PAGE_TITLE=${GET_PAGE_TITLE:=true}
+	# _BM_GET_PAGE_TITLE : When adding a URL execute a curl command to get the <title> if none given
+	export _BM_GET_PAGE_TITLE=${_BM_GET_PAGE_TITLE:=true}
 
-	# GET_SCREENSHOT : When adding a URL try to take a screenshot in background
-	export GET_SCREENSHOT=${GET_SCREENSHOT:=true}
+	# _BM_GET_SCREENSHOT : When adding a URL try to take a screenshot in background
+	export _BM_GET_SCREENSHOT=${_BM_GET_SCREENSHOT:=true}
 
-	# WAIT_SCREENSHOT : When taking a screenshot wait for the action to finish
-	export WAIT_SCREENSHOT=${WAIT_SCREENSHOT:=false}
+	# _BM_WAIT_SCREENSHOT : When taking a screenshot wait for the action to finish
+	export _BM_WAIT_SCREENSHOT=${_BM_WAIT_SCREENSHOT:=false}
 
-	# HTML_FILE : Location of generated HTML file
-	export HTML_FILE="${HTML_FILE:=${__w}bm.html}"
+	# _BM_HTML_FILE : Location of generated HTML file
+	export _BM_HTML_FILE="${_BM_HTML_FILE:=${__w}bm.html}"
 
-	# OPEN_FIRST : When using open, the first link found is open
+	# _BM_OPEN_FIRST : When using open, the first link found is open
 	#              Also work with the copy to clipboard function
-	export OPEN_FIRST="${OPEN_FIRST:=${__y:=0}}"
+	export _BM_OPEN_FIRST="${_BM_OPEN_FIRST:=${__y:=0}}"
 
-	# 
+	# _BM_NO_ARGS_FORCE_HELP : If no args given to script sends to help instead of list all link
+	export _BM_NO_ARGS_FORCE_HELP=${_BM_NO_ARGS_FORCE_HELP:=false}
 }
 
 
@@ -430,15 +431,20 @@ clear_bookmarks() {
   rm -fr $THUMBS
 }
 
-
 #
-# Check System to find corect binaries
+# die print message to stderr and exit
 #
 
-check_binaries() {
-	
+die() {
+        echo -e "${@}" >&2
+        exit 1
 }
+
+
+#
 # checkBinaries check the script is able to run and give hints
+#
+
 checkBinaries() {
 	local cmdErr="sed awk date iconv head cat"
 	set ${cmdErr}
@@ -453,8 +459,8 @@ checkBinaries() {
 	# Checking sed 
 	local rc=1
 	[[ ! -f "/tmp/sedtest.$$" ]] && \
-	echo 'toto' > "/tmp/sedtest.$$" && \
-	sed -i.bak 's;^toto$/tata/' && \
+	echo -n 'toto' > "/tmp/sedtest.$$" && \
+	sed -i.bak -e 's;^toto$;tata;' "/tmp/sedtest.$$" && \
 	[[ -f "/tmp/sedtest.$$.bak" ]] && \
 	grep -q "tata" "/tmp/sedtest.$$" && \
 	rc=0 && \
@@ -462,15 +468,16 @@ checkBinaries() {
 	[[ ${rc} -ne 0 ]] && die "sed seems to not handle -i arguent properly, please check"
 }
 
+##############################################################################
+# MAIN
+##############################################################################
+
 checkBinaries
 
+[[ ${#} -eq 0 && ${_BM_NO_ARGS_FORCE_HELP:=0} -eq 0 ]] && list_bookmarks && exit 0
 
-# no args
+##############################################################################
 
-if test $# -eq 0; then
-  list_bookmarks
-  exit
-fi
 
 # parse args
 
