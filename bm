@@ -1,0 +1,561 @@
+#!/usr/bin/env bash
+
+# default filename for Baker config file (just the filename no path)
+readonly _BM_DEFAULT_CONFIG_FILENAME="${_BM_DEFAULT_CONFIG_FILENAME:=bm.conf}"
+
+
+
+
+
+config() {
+	echo "Reading Configuration..." >&2
+	[[ "${__w:=$HOME}" != "${HOME}" ]] && echo "Working dir changed to ${__w}"
+	[[ "${__w: -1}" != '/' ]] && __w="${__w//\/\//\/}/"
+	# If a config file is given, we take it first, or look for a default config file
+	if [ -f "$(readlink -m "${1:-}")" ]; then
+		. "${1}"
+	elif [ ${__n:=0} -eq 0 -a -f "${__w}${_BM_DEFAULT_CONFIG_FILENAME}" ]; then
+		. "${__w}${_BM_DEFAULT_CONFIG_FILENAME}"
+		echo "Default config file loaded ${__w}${_BM_DEFAULT_CONFIG_FILENAME}"
+	fi
+
+	# _BM_DELETE_ALLOWED : Even with the force flag the delete function will not be allowed (true or false)
+	export _BM_DELETE_ALLOWED=${_BM_DELETE_ALLOWED:=true}
+
+	# _BM_DELETE_TO_FILE : Allow or disallow the deleted URLs to be copied in the Trash (true or false)
+	export _BM_DELETE_TO_FILE=${_BM_DELETE_TO_FILE:=true}
+
+	# _BM_DELETE_FILE : Where to find the deleted URLs
+	export _BM_DELETE_FILE="${_BM_DELETE_FILE:=${__w}.bm.trash}"
+
+	# _BM_BOOKMARK_FILE : Where is stored the bookmark file
+	export _BM_BOOKARK_FILE="${_BM_BOOKMARK_FILE:=${__w}bm.lnk}"
+
+	# _BM_DUPS_DETECT : Look for duplicates URL before insert in bookmark file
+	export _BM_DUPS_DETECT=${_BM_DUPS_DETECT:=true}
+
+	# _BM_ASK_BEFORE_OPEN : When using bm with a URL (or search term) ask before opening the browser if more than one answer
+	export _BM_ASK_BEFORE_OPEN=${_BM_ASK_BEFORE_OPEN:=true}
+
+	# _BM_GET_PAGE_TITLE : When adding a URL execute a curl command to get the <title> if none given
+	export _BM_GET_PAGE_TITLE=${_BM_GET_PAGE_TITLE:=true}
+
+	# _BM_GET_SCREENSHOT : When adding a URL try to take a screenshot in background
+	export _BM_GET_SCREENSHOT=${_BM_GET_SCREENSHOT:=true}
+
+	# _BM_WAIT_SCREENSHOT : When taking a screenshot wait for the action to finish
+	export _BM_WAIT_SCREENSHOT=${_BM_WAIT_SCREENSHOT:=false}
+
+	# _BM_HTML_FILE : Location of generated HTML file
+	export _BM_HTML_FILE="${_BM_HTML_FILE:=${__w}bm.html}"
+
+	# _BM_OPEN_FIRST : When using open, the first link found is open
+	#              Also work with the copy to clipboard function
+	export _BM_OPEN_FIRST="${_BM_OPEN_FIRST:=${__y:=0}}"
+
+	# _BM_NO_ARGS_FORCE_HELP : If no args given to script sends to help instead of list all link
+	export _BM_NO_ARGS_FORCE_HELP=${_BM_NO_ARGS_FORCE_HELP:=false}
+}
+
+
+# headers prints the header of a markdown file
+getHeaders() {
+        awk '/^---$/ { c++; next } c == 1'
+}
+
+# header prints a specific header value
+getHeader() {
+        getHeaders | sed -e '/^[[:space:]]*'"${1}"'[[:space:]]*:/!d;s/[[:space:]]*'"${1}"'[[:space:]]*:[[:space:]]*\(.*\)/\1/g'
+}
+
+# body prints the body of a markdown file
+getBody() {
+        awk '/^---$/ { c++; next } c >= 2'
+}
+
+# slug creates a friendly URL like 'hello-world'
+slug() {
+        iconv -f utf8 -t ascii//TRANSLIT | tr -cs '[:alnum:]\n' - | tr '[:upper:]' '[:lower:]' | sed 's|^-*||;s|-*$||'
+}
+
+
+
+
+# version
+
+VERSION="0.4.1-Flyou"
+
+# bookmarks dir
+
+DIR=~/Dropbox
+
+# thumbs cache
+
+THUMBS=$DIR/bookmark-thumbs
+
+# bookmarks file
+
+BOOKMARKS=$DIR/bookmarks
+
+# HTML file
+
+HTML=/tmp/bm.html
+
+#
+# Output usage info
+#
+
+usage() {
+  cat <<EOF
+
+  Usage: bm [options] [cmd]
+
+  Commands:
+
+    # add a bookmark with the given url, description, and optional tags
+    $ bm add <url> [desc] [tag...]
+
+    # open the first bookmark matching <query>
+    $ bm open <query>
+    $ bm <query>
+
+    # search the bookmarks via full-text <query>
+    $ bm search <query>
+
+    # list tags
+    $ bm tags
+
+    # list bookmarks available
+    $ bm list
+    $ bm ls
+    $ bm
+
+    # display statistics about the bookmarks
+    $ bm statistics
+    $ bm stats
+
+    # view bookmark screenshots in your default browser
+    $ bm view design
+    $ bm view
+
+    # clear all bookmarks
+    $ bm clear
+
+  Options:
+
+     -V, --version   output bm version
+     -h, --help      output this help information
+
+Usage: ${0} command [option(s)]
+
+	Commands :
+	-a 'URL'	Add the URL to bookmark file
+			Options for -a
+			-t "TagList"	Tags are sparated by a comma ,
+			-T "Title"	Title for this URL (if empty and allowed Title
+					downloaded)
+			-A "accel"	Accelerator when search for URLs (start with Accel)
+					Default is FQDN without gTld (and www, and sheme)
+
+	-d 'URL' or	Delete the URL from bookmark file
+	   md5sum or
+	   'part of the URL'
+
+
+EOF
+}
+
+#
+# Add a bookmark
+#
+#   <url> [description] [tag ...] 
+#
+
+save_bookmark() {
+  local url=$1
+	local _sum="$(md5sum <<< "${url}")"
+  local desc=$2
+  local tags=${@:3}
+  echo
+  echo "  Added bookmark"
+  echo
+  echo "    url: $url"
+  echo "    description: $desc"
+  echo "    tags: $tags"
+  echo
+  echo "${_sum%% *}|$url|$desc|$tags" >> $BOOKMARKS
+}
+
+#
+# List all bookmarks
+#
+
+list_bookmarks() {
+  echo
+  cat $BOOKMARKS \
+    | awk '
+    BEGIN { FS = "|" }
+    {
+      printf "  \033[36m%s\033[0m\n", $2
+      printf "  \033[33m%s\033[0m\n", $3
+      printf "  \033[90m%s\033[0m\n\n", $4
+    }' \
+    | sed 's/^[[:space:]]*\(f\|ht\)tps*:\/\///'
+  echo
+}
+
+#
+# Search all bookmarks with <query>
+#
+
+search_bookmarks() {
+  echo
+  cat $BOOKMARKS \
+    | grep $1 \
+    | awk '
+    BEGIN { FS = "|" }
+    {
+      printf "  \033[36m%s\033[0m\n", $2
+      printf "  \033[33m%s\033[0m\n", $3
+      printf "  \033[90m%s\033[0m\n\n", $4
+    }' \
+    | sed 's/^[[:space:]]*\(f\|ht\)tps*:\/\///'
+  echo
+}
+
+#
+# Open first bookmark matching <query>
+#
+
+open_bookmark() {
+  cat $BOOKMARKS \
+    | grep $1 \
+    | cut -d '|' -f 2 \
+    | xargs open
+}
+
+#
+# Diplay some statistics about the bookmarks
+#
+
+show_statistics() {
+  local total_bookmarks=$(cat $BOOKMARKS | wc -l | sed 's/^ *//')
+  local total_tags=$(list_tags | wc -l | sed 's/^ *//')
+
+  echo
+  echo "    total bookmarks: $total_bookmarks"
+  echo "         total tags: $total_tags"
+  echo "        top 10 tags: `display_top_ten_tags`"
+  echo
+}
+
+#
+# Output tags.
+#
+
+list_tags() {
+  cat $BOOKMARKS \
+    | cut -f4 -d '|' \
+    | tr " " "\n" \
+    | sort \
+    | uniq -c \
+    | sort -nr
+}
+
+# 
+# Display the 10 most frequently used tags
+#
+
+display_top_ten_tags() {
+  echo
+  printf "%20s  %s\n" count tag
+  list_tags \
+    | head -10 \
+    | awk '{ printf("%20d  %s\n", $1, $2) }'
+}
+
+
+#
+# Stylesheet
+#
+
+style() {
+  cat <<EOF
+<style>
+  * {
+     -webkit-box-sizing: border-box;
+     -moz-box-sizing: border-box;
+     box-sizing: border-box;
+   }
+   body {
+     padding: 50px 0 5px 50px;
+     background: #1f1f1f url(http://subtlepatterns.com/patterns/black-Linen.png);
+     font: 12px "Helvetica Neue", Helvetica, Arial, sans-serif;
+   }
+   .bm {
+     position: relative;
+     float: left;
+     margin: 15px;
+     padding: 1px;
+     opacity: 1;
+     border: 15px solid black;
+     -webkit-border-radius: 5px;
+     -moz-border-radius: 5px;
+     -webkit-transition: -webkit-box-shadow 600ms;
+     -moz-transition: -webkit-box-shadow 600ms;
+     -webkit-box-shadow: 0 0 1px 0 #555, 0 0 10px rgba(0,0,0,.5);
+     -moz-box-shadow: 0 0 1px 0 #555, 0 0 10px rgba(0,0,0,.5);
+     overflow: hidden;
+   }
+   .bm:hover {
+     -webkit-box-shadow: 0 0 40px #1ab0ff
+       , 0 0 3px #06bdff
+       , 0 1px 1px #4ee2ff
+       , 0 1px 0 #fff;
+     -moz-box-shadow: 0 0 40px #1ab0ff
+       , 0 0 3px #06bdff
+       , 0 1px 1px #4ee2ff
+       , 0 1px 0 #fff;
+   }
+   .bm:hover img {
+     opacity: 1;
+   }
+   .bm img {
+     width: 200px;
+     height: 150px;
+     opacity: .5;
+     -webkit-transition: opacity 200ms;
+     -moz-transition: opacity 200ms;
+   }
+   .bm p {
+     margin: 0;
+     padding: 10px;
+     width: 100%;
+     background: rgba(0,0,0,.75);
+     position: absolute;
+     left: 0;
+     color: white;
+     letter-spacing: 1px;
+     bottom: -50px;
+     -webkit-font-smoothing: antialiased;
+     -webkit-transition: bottom 200ms ease-in;
+   }
+   .bm:hover p {
+     bottom: 0;
+   }
+</style>
+EOF
+}
+
+#
+# List urls
+#
+
+urls() {
+  cat $BOOKMARKS \
+    | grep "$1" \
+    | cut -d '|' -f 2
+}
+
+#
+# Generate bookmark screenshots
+#
+
+create_bookmark_screenshots() {
+  which webkit2png > /dev/null
+
+  if test $? -ne 0; then
+    echo 
+    echo "  You need webkit2png(1) installed for this feature:"
+    echo "  $ brew install webkit2png"
+    echo 
+    exit
+  fi
+
+  local urls=`urls`
+
+  # thumbs dir
+  mkdir -p $THUMBS
+
+  # fetch thumbs
+  for url in $urls; do
+    local path=$THUMBS/`echo $url | md5`.png
+    if ! test -f $path; then
+      webkit2png -C -o out.png $url
+# cutycapt --out="out.png" --url="$url"
+      mv out.png-clipped.png $path
+      echo " ... added $path"
+    fi
+  done
+
+  rm -f out.png-{clipped,full,thumb}.png
+}
+
+#
+# View bookmark screenshots grep <pattern>
+#
+
+view_bookmark_screenshots() {
+  create_bookmark_screenshots
+
+  echo "<title>Bookmarks</title>" > $HTML
+  style >> $HTML
+
+  (
+    while read line; do
+      # TODO: slow... refactor
+      local url=`echo "$line" | cut -d '|' -f 2`
+      local desc=`echo "$line" | cut -d '|' -f 3`
+      local tags=`echo "$line" | cut -d '|' -f 4`
+      local path=$THUMBS/`echo $url | md5`.png
+      echo "
+        <div class=bm>
+          <a href='$url'>
+            <img src='$path' />
+          </a>
+          <p>$desc</p>
+        </div>
+      " >> $HTML
+    done
+  ) < <(cat $BOOKMARKS | grep "$1")
+
+  open $HTML
+}
+
+#
+# Remove all bookmarks
+#
+
+clear_bookmarks() {
+  rm $BOOKMARKS
+  rm -fr $THUMBS
+}
+
+#
+# die print message to stderr and exit
+#
+
+die() {
+        echo -e "${@}" >&2
+        exit 1
+}
+
+
+#
+# checkBinaries check the script is able to run and give hints
+#
+
+checkBinaries() {
+	local cmdErr="sed awk date iconv head cat"
+	set ${cmdErr}
+	while [ ${#} -ne 0 ]; do
+		if ! command -v "${1:-}" &>/dev/null; then
+			echo "command not found: ${1}" >&2
+			local rc=1
+		fi
+		shift
+	done
+	[[ ${rc:=0} -ne 0 ]] && die "At least one command is missing. Please install it before using bm."
+	# Checking sed 
+	local rc=1
+	[[ ! -f "/tmp/sedtest.$$" ]] && \
+	echo -n 'toto' > "/tmp/sedtest.$$" && \
+	sed -i.bak -e 's;^toto$;tata;' "/tmp/sedtest.$$" && \
+	[[ -f "/tmp/sedtest.$$.bak" ]] && \
+	grep -q "tata" "/tmp/sedtest.$$" && \
+	rc=0 && \
+	rm -f "/tmp/sedtest.$$" "/tmp/sedtest.$$.bak"
+	[[ ${rc} -ne 0 ]] && die "sed seems to not handle -i arguent properly, please check"
+}
+
+##############################################################################
+# MAIN
+##############################################################################
+
+checkBinaries
+
+[[ ${#} -eq 0 && ${_BM_NO_ARGS_FORCE_HELP:=0} -eq 0 ]] && list_bookmarks && exit 0
+
+##############################################################################
+
+
+# parse args
+
+while test $# -ne 0; do
+  arg=$1; shift
+  case $arg in
+    -V|--version) echo $VERSION; exit ;;
+    -h|--help) usage; exit ;;
+    tags) list_tags; exit ;;
+    ls|list) list_bookmarks; exit ;;
+    search) search_bookmarks "$@"; exit ;;
+    open) open_bookmark "$@"; exit ;;
+    add) save_bookmark "$@"; exit ;;
+    view) view_bookmark_screenshots "$@"; exit ;;
+    stats|statistics) show_statistics; exit ;;
+    clear) clear_bookmarks; exit ;;
+    *) open_bookmark $arg; exit ;;
+  esac
+done
+
+exit 0
+
+##################### TRANSITIONNAL ############################
+
+_regex='^(tags|ls|list|searxh|open|add|view|stats|statistics|clear)$'
+if [[ ${1:-} =~ ${_regex} ]]; then
+        case "$1" in
+                bake) __b=1 ;;
+                post) __p=1; __post="${@:2}" ;;
+                list) __l=1;;
+                toggle) __t=1; __post="${@:2}" ;;
+                date) __d=1; __post="${@:2}" ;;
+                rename) __r=1; __post="${@:2}" ;;
+                *) usage ;;
+        esac
+else
+        # used      : -----c--------Hh--------------------------V------y------------
+        # available : AaBbC-DdEeFfGg--IiJjKkLlMmNnOoPpQqRrSsTtUu-vWwXxY-Zz0123456789
+        while getopts ":d:f:p:r:s:S:w:bDhHlntxX" option; do
+                case ${option} in
+                        c) __c="${OPTARG}";;
+			y) __y=1;;
+			V) echo "${0} v${VERSION}"; exit 0;;
+                        ?|H|h) usage; exit 0;;
+                        *) echo "Argument unknown" >&2; usage;;
+
+
+
+
+                        b) __b=1;;
+                        d) __d=1;__post="${OPTARG}";;
+                        D) __D=1;;
+                        l) __l=1;;
+                        f) __f="${OPTARG}";;
+                        n) __n=1;;
+                        p) __p=1;__post="${OPTARG}";;
+                        r) __r=1;__post="${OPTARG}";;
+                        s) __s=1;__post="${OPTARG}";;
+                        S) [[ "${OPTARG,,}" =~ ^(user|all|none)$ ]] || die "Argument '${OPTARG}' unknown."; export PRINT_ALL_SUMMARY="${OPTARG,,}";;
+                        t) __t=1;;
+                        w) [[ -d "${OPTARG}" ]] && __w="$( cd ${OPTARG}; pwd)/";;
+                        x) __x=1;;
+                        X) __X=1;;
+                esac
+        done
+fi
+
+config "${__c}"
+
+# Check du sed
+# echo toto > fichier
+# sed -i.bak -s 's;toto;tata;' fichier
+# grep tata c'est ok sinon pas top
+# rm des 2 fichiers
+
+# Il doit y avoir un default tag
+
+# Header :
+# + counter URLs open
+# + counter URLs copied
+# + counter URLs deleted
