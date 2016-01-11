@@ -19,6 +19,9 @@ config() {
 		echo "Default config file loaded ${__w}${_BM_DEFAULT_CONFIG_FILENAME}"
 	fi
 
+	# _BM_BOOKMARK_FILE : Where is stored the bookmark file
+	export _BM_BOOKARK_FILE="${_BM_BOOKMARK_FILE:=${__w}bm.lnk}"
+
 	# _BM_DELETE_ALLOWED : Even with the force flag the delete function will not be allowed (true or false)
 	export _BM_DELETE_ALLOWED=${_BM_DELETE_ALLOWED:=true}
 
@@ -27,9 +30,6 @@ config() {
 
 	# _BM_DELETE_FILE : Where to find the deleted URLs
 	export _BM_DELETE_FILE="${_BM_DELETE_FILE:=${__w}.bm.trash}"
-
-	# _BM_BOOKMARK_FILE : Where is stored the bookmark file
-	export _BM_BOOKARK_FILE="${_BM_BOOKMARK_FILE:=${__w}bm.lnk}"
 
 	# _BM_DUPS_DETECT : Look for duplicates URL before insert in bookmark file
 	export _BM_DUPS_DETECT=${_BM_DUPS_DETECT:=true}
@@ -67,10 +67,12 @@ config() {
 	if [ "$(uname -s)" = 'Linux' ]; then
 		export _BM_CMD_OPEN='xdg-open'
 		export _BM_CMD_CAPTURE='cutycapt'
+		export _BM_CMD_MD5='md5sum'
 	else
 		# To keep commpatibility with the Mac (even i don't have any)
 		export _BM_CMD_OPEN='open'
 		export _BM_CMD_CAPTURE='webkit2png'
+		export _BM_CMD_MD5='md5'
 	fi
 }
 
@@ -190,7 +192,7 @@ EOF
 
 save_bookmark() {
 	local url=$1
-	local _sum="$(md5sum <<< "${url}")"
+	local _sum="$(${_BM_CMD_MD5} <<< "${url}")"
 	local desc=$2
 	local tags=${@:3}
 	if [ ${_BM_DUPS_DETECT} ]; then
@@ -260,7 +262,7 @@ open_bookmark() {
 	cat "${_BM_BOOKMARK_FILE}" \
 	| grep $1 \
 	| cut -d '|' -f 2 \
-	| xargs open
+	| xargs "${_BM_CMD_OPEN}"
 }
 
 #
@@ -480,7 +482,7 @@ checkBinaries() {
 	if [ ${#} -ne 0 ]; then
 		local cmdErr="${@}"
 	else
-		local cmdErr="sed awk date iconv head cat ${_BM_CMD_OPEN}"
+		local cmdErr="sed awk date iconv head cat ${_BM_CMD_OPEN} ${_BM_CMD_MD5}"
 	fi
 	set ${cmdErr}
 	while [ ${#} -ne 0 ]; do
@@ -556,6 +558,13 @@ if [[ ${1:-} =~ ${_regex} ]]; then
                 *) usage ;;
         esac
 else
+# -c config file
+# -b bookmark file
+# -w working dir
+# -a add url
+# -A Accelerator
+# -T title
+# -t tags
         # used      : -----c--------Hh--------------------------V------y------------
         # available : AaBbC-DdEeFfGg--IiJjKkLlMmNnOoPpQqRrSsTtUu-vWwXxY-Zz0123456789
         while getopts ":d:f:p:r:s:S:w:bDhHlntxX" option; do
