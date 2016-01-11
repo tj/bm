@@ -194,7 +194,7 @@ save_bookmark() {
 	local desc=$2
 	local tags=${@:3}
 	if [ ${_BM_DUPS_DETECT} ]; then
-		if [ ! -z "$(awk -F '|' '$1 ~ /'"${_sum%% *}"'/')" ]; then
+		if [ ! -z "$(awk -F '|' '$1 ~ /'"${_sum%% *}"'/' "${_BM_BOOKMARK_FILE}")" ]; then
 			die "URL is already in the Bookmark file"
 		fi
 	fi
