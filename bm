@@ -55,6 +55,23 @@ config() {
 
 	# _BM_NO_ARGS_FORCE_HELP : If no args given to script sends to help instead of list all link
 	export _BM_NO_ARGS_FORCE_HELP=${_BM_NO_ARGS_FORCE_HELP:=false}
+
+	# _BM_CREATE_BOOKMARK_FILE : If bm is called to list and no file exists. bm will create  a default one.
+	export _BM_CREATE_BOOKMARK_FILE=${_BM_CREATE_BOOKMARK_FILE:=true}
+
+	# _BM_CMD_CAPTURE_CHECK : If you don't have tool installed to take screenshot, just put to false.
+	#                     It will disable the _BM_GET_SCREENSHOT.
+	export _BM_CMD_CAPTURE_CHECK=${_BM_CMD_CAPTURE_CHECK:=true}
+
+	# I suppose the uname command is available
+	if [ "$(uname -s)" = 'Linux' ]; then
+		export _BM_CMD_OPEN='xdg-open'
+		export _BM_CMD_CAPTURE='cutycapt'
+	else
+		# To keep commpatibility with the Mac (even i don't have any)
+		export _BM_CMD_OPEN='open'
+		export _BM_CMD_CAPTURE='webkit2png'
+	fi
 }
 
 
@@ -172,18 +189,24 @@ EOF
 #
 
 save_bookmark() {
-  local url=$1
+	local url=$1
 	local _sum="$(md5sum <<< "${url}")"
-  local desc=$2
-  local tags=${@:3}
-  echo
-  echo "  Added bookmark"
-  echo
-  echo "    url: $url"
-  echo "    description: $desc"
-  echo "    tags: $tags"
-  echo
-  echo "${_sum%% *}|$url|$desc|$tags" >> $BOOKMARKS
+	local desc=$2
+	local tags=${@:3}
+	if [ ${_BM_DUPS_DETECT} ]; then
+		if [ ! -z "$(awk -F '|' '$1 ~ /'"${_sum%% *}"'/')" ]; then
+			die "URL is already in the Bookmark file"
+		fi
+	fi
+	echo
+	echo "  Added bookmark"
+	echo
+	echo "    url: $url"
+	echo "    description: $desc"
+	echo "    tags: $tags"
+	echo
+	echo "${_sum%% *}|$url|$desc|$tags" >> "${_BM_BOOKMARK_FILE}"
+#	echo "${_sum%% *}|$url|$desc|$tags" >> $BOOKMARKS
 }
 
 #
@@ -191,17 +214,19 @@ save_bookmark() {
 #
 
 list_bookmarks() {
-  echo
-  cat $BOOKMARKS \
-    | awk '
-    BEGIN { FS = "|" }
-    {
-      printf "  \033[36m%s\033[0m\n", $2
-      printf "  \033[33m%s\033[0m\n", $3
-      printf "  \033[90m%s\033[0m\n\n", $4
-    }' \
-    | sed 's/^[[:space:]]*\(f\|ht\)tps*:\/\///'
-  echo
+	echo
+#	cat $BOOKMARKS \
+
+	cat "${_BM_BOOKMARK_FILE}" \
+	| awk '
+		BEGIN { FS = "|" }
+		{
+		printf "  \033[36m%s\033[0m\n", $2
+		printf "  \033[33m%s\033[0m\n", $3
+		printf "  \033[90m%s\033[0m\n\n", $4
+	}' \
+	| sed 's/^[[:space:]]*\(f\|ht\)tps*:\/\///'
+	echo
 }
 
 #
@@ -209,18 +234,20 @@ list_bookmarks() {
 #
 
 search_bookmarks() {
-  echo
-  cat $BOOKMARKS \
-    | grep $1 \
-    | awk '
-    BEGIN { FS = "|" }
-    {
-      printf "  \033[36m%s\033[0m\n", $2
-      printf "  \033[33m%s\033[0m\n", $3
-      printf "  \033[90m%s\033[0m\n\n", $4
-    }' \
-    | sed 's/^[[:space:]]*\(f\|ht\)tps*:\/\///'
-  echo
+	echo
+#	cat $BOOKMARKS \
+
+	cat "${_BM_BOOKMARK_FILE}" \
+	| grep $1 \
+	| awk '
+		BEGIN { FS = "|" }
+		{
+		printf "  \033[36m%s\033[0m\n", $2
+		printf "  \033[33m%s\033[0m\n", $3
+		printf "  \033[90m%s\033[0m\n\n", $4
+	}' \
+	| sed 's/^[[:space:]]*\(f\|ht\)tps*:\/\///'
+	echo
 }
 
 #
@@ -228,10 +255,12 @@ search_bookmarks() {
 #
 
 open_bookmark() {
-  cat $BOOKMARKS \
-    | grep $1 \
-    | cut -d '|' -f 2 \
-    | xargs open
+#	cat $BOOKMARKS \
+
+	cat "${_BM_BOOKMARK_FILE}" \
+	| grep $1 \
+	| cut -d '|' -f 2 \
+	| xargs open
 }
 
 #
@@ -239,14 +268,14 @@ open_bookmark() {
 #
 
 show_statistics() {
-  local total_bookmarks=$(cat $BOOKMARKS | wc -l | sed 's/^ *//')
-  local total_tags=$(list_tags | wc -l | sed 's/^ *//')
+	local total_bookmarks=$(cat "${_BM_BOOKMARK_FILE}" | wc -l | sed 's/^ *//')
+	local total_tags=$(list_tags | wc -l | sed 's/^ *//')
 
-  echo
-  echo "    total bookmarks: $total_bookmarks"
-  echo "         total tags: $total_tags"
-  echo "        top 10 tags: `display_top_ten_tags`"
-  echo
+	echo
+	echo "    total bookmarks: $total_bookmarks"
+	echo "         total tags: $total_tags"
+	echo "        top 10 tags: `display_top_ten_tags`"
+	echo
 }
 
 #
@@ -254,12 +283,14 @@ show_statistics() {
 #
 
 list_tags() {
-  cat $BOOKMARKS \
-    | cut -f4 -d '|' \
-    | tr " " "\n" \
-    | sort \
-    | uniq -c \
-    | sort -nr
+#	cat $BOOKMARKS \
+
+	cat "${_BM_BOOKMARK_FILE}" \
+	| cut -f4 -d '|' \
+	| tr " " "\n" \
+	| sort \
+	| uniq -c \
+	| sort -nr
 }
 
 # 
@@ -267,11 +298,11 @@ list_tags() {
 #
 
 display_top_ten_tags() {
-  echo
-  printf "%20s  %s\n" count tag
-  list_tags \
-    | head -10 \
-    | awk '{ printf("%20d  %s\n", $1, $2) }'
+	echo
+	printf "%20s  %s\n" count tag
+	list_tags \
+	| head -10 \
+	| awk '{ printf("%20d  %s\n", $1, $2) }'
 }
 
 
@@ -446,7 +477,11 @@ die() {
 #
 
 checkBinaries() {
-	local cmdErr="sed awk date iconv head cat"
+	if [ ${#} -ne 0 ]; then
+		local cmdErr="${@}"
+	else
+		local cmdErr="sed awk date iconv head cat ${_BM_CMD_OPEN}"
+	fi
 	set ${cmdErr}
 	while [ ${#} -ne 0 ]; do
 		if ! command -v "${1:-}" &>/dev/null; then
@@ -471,14 +506,21 @@ checkBinaries() {
 ##############################################################################
 # MAIN
 ##############################################################################
-
+#set -xv
 checkBinaries
 
-[[ ${#} -eq 0 && ${_BM_NO_ARGS_FORCE_HELP:=0} -eq 0 ]] && list_bookmarks && exit 0
+# Until arguments are not checked, the config is called before
+config "${__c}"
+[[ ${_BM_CMD_CAPTURE_CHECK} ]] && checkBinaries "${_BM_CMD_CAPTURE}"
+
 
 ##############################################################################
 
+if [ ! -f "${_BM_BOOKMARK_FILE}" -a ${_BM_CREATE_BOOKMARK_FILE} ]; then
+	echo "bd8b3eff7fa82a0382a3e7576c5363b6|https://github.com/Flyounet/bm/|bm a cool bookmark tool for your console|default" >> "${_BM_BOOKMARK_FILE}"
+fi
 
+[[ ${#} -eq 0 && ${_BM_NO_ARGS_FORCE_HELP:=0} -eq 0 ]] && list_bookmarks && exit 0
 # parse args
 
 while test $# -ne 0; do
