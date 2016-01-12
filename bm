@@ -74,6 +74,9 @@ config() {
 		export _BM_CMD_CAPTURE='webkit2png'
 		export _BM_CMD_MD5='md5'
 	fi
+
+	# _BM_PRINT_LINE : This line is used to print datas
+	export _BM_PRINT_LINE="${_BM_PRINT_LINE:=${GRAY}{BM_ACCEL} --> ${GRAY_LIGHT}{BM_URL} ${RESET}{BM_TITLE} ${GRAY_DARK}[{BM_TAGS}]${RESET}}"
 }
 
 
@@ -505,6 +508,43 @@ checkBinaries() {
 	[[ ${rc} -ne 0 ]] && die "sed seems to not handle -i arguent properly, please check"
 }
 
+#
+# defineColors generate the variables to use to colorize the output
+#
+
+defineColors() {
+	export BLACK="\e[30m";		export BLACK_LIGHT="\e[90m";	export GRAY_DARK="${BLACK_LIGHT}"
+	export RED="\e[31m";		export RED_LIGHT="\e[91m"
+	export GREEN="\e[32m";		export GREEN_LIGHT="\e[92m"
+	export YELLOW="\e[33m";		export YELLOW_LIGHT="\e[93m"
+	export BLUE="\e[34m";		export BLUE_LIGHT="\e[94m"
+	export MAGENTA="\e[35m";	export MAGENTA_LIGHT="\e[95m"
+	export CYAN="\e[36m";		export CYAN_LIGHT="\e[96m"
+	export GRAY="\e[37m";		export GRAY_LIGHT="\e[97m";	export WHITE="${GRAY_LIGHT}"
+
+	export RESET="\e[0m"
+	export BOLD="\e[1m";		export BOLD_RESET="\e[21m"
+	export DIM="\e[2m";		export DIM_RESET="\e[22m"	
+	export UNDERLINE="\e[4m";	export UNDERLINE_RESET="\e[24m"
+	if [ ! -z "${1:-}" ]; then
+		echo "Use the following colors to fit your needs :"
+		(
+		echo -e "${RESET}${BLACK}BLACK${RESET} - ${BLACK_LIGHT}BLACK_LIGHT${RESET} - ${BOLD}${BLACK}BOLD BLACK${RESET} - ${DIM}${BLACK}DIM BLACK${RESET}"
+		echo -e "${RESET}${RED}RED${RESET} - ${RED_LIGHT}RED_LIGHT${RESET} - ${BOLD}${RED}BOLD RED${RESET} - ${DIM}${RED}DIM RED${RESET}"
+		echo -e "${RESET}${GREEN}GREEN${RESET} - ${GREEN_LIGHT}GREEN_LIGHT${RESET} - ${BOLD}${GREEN}BOLD GREEN${RESET} - ${DIM}${GREEN}DIM GREEN${RESET}"
+		echo -e "${RESET}${YELLOW}YELLOW${RESET} - ${YELLOW_LIGHT}YELLOW_LIGHT${RESET} - ${BOLD}${YELLOW}BOLD YELLOW${RESET} - ${DIM}${YELLOW}DIM YELLOW${RESET}"
+		echo -e "${RESET}${BLUE}BLUE${RESET} - ${BLUE_LIGHT}BLUE_LIGHT${RESET} - ${BOLD}${BLUE}BOLD BLUE${RESET} - ${DIM}${BLUE}DIM BLUE${RESET}"
+		echo -e "${RESET}${MAGENTA}MAGENTA${RESET} - ${MAGENTA_LIGHT}MAGENTA_LIGHT${RESET} - ${BOLD}${MAGENTA}BOLD MAGENTA${RESET} - ${DIM}${MAGENTA}DIM MAGENTA${RESET}"
+		echo -e "${RESET}${CYAN}CYAN${RESET} - ${CYAN_LIGHT}CYAN_LIGHT${RESET} - ${BOLD}${CYAN}BOLD CYAN${RESET} - ${DIM}${CYAN}DIM CYAN${RESET}"
+		echo -e "${RESET}${GRAY}GRAY${RESET} - ${GRAY_LIGHT}GRAY_LIGHT${RESET} - ${BOLD}${GRAY}BOLD GRAY${RESET} - ${DIM}${GRAY}DIM GRAY${RESET}"
+		echo -e "${RESET}${GRAY_DARK}GRAY_DARK${RESET} - ${WHITE}WHITE${RESET}"
+		) | column -t
+		echo -e "You could also use the ${UNDERLINE}UNDERLINE and the ${RESET}RESET variable."
+		exit 0
+	fi
+}
+
+
 ##############################################################################
 # MAIN
 ##############################################################################
@@ -515,6 +555,7 @@ checkBinaries
 config "${__c}"
 [[ ${_BM_CMD_CAPTURE_CHECK} ]] && checkBinaries "${_BM_CMD_CAPTURE}"
 
+defineColors 1
 
 ##############################################################################
 
