@@ -76,7 +76,10 @@ config() {
 	fi
 
 	# _BM_PRINT_LINE : This line is used to print datas
-	export _BM_PRINT_LINE="${_BM_PRINT_LINE:=${GRAY}{BM_ACCEL} --> ${GRAY_LIGHT}{BM_URL} ${RESET}{BM_TITLE} ${GRAY_DARK}[{BM_TAGS}]${RESET}}"
+	export _BM_PRINT_LINE="${_BM_PRINT_LINE:=${UNDERLINE}${GRAY_LIGHT}BM_URL${RESET} --> ${RESET}BM_TITLE ${GRAY_DARK}[BM_TAGS]\n${BOLD}${GRAY}BM_ACCEL ${GRAY_DARK}(BM_MD5)${RESET}}"
+
+	# _BM_PRINT_SCHEME : If set to no, bm will remove scheme from URL printing
+	export _BM_PRINT_SCHEME=${_BM_PRINT_SCHEME:=true}
 }
 
 
@@ -215,23 +218,31 @@ save_bookmark() {
 }
 
 #
+# manage each line to print it
+#
+
+readLines() {
+	IFS='|'
+	while read m u T t; do
+		_line="${_BM_PRINT_LINE}"
+		_line="${_line//BM_MD5/$m}"
+		if [ ! ${_BM_PRINT_SCHEME} ]; then
+			u="$(sed 's/^[[:space:]]*\(f\|ht\)tps*:\/\///' <<< "${u}")"
+		fi
+		_line="${_line//BM_URL/$u}"
+		_line="${_line//BM_TITLE/$T}"
+		_line="${_line//BM_TAGS/$t}"
+		_line="${_line//BM_ACCEL/${a:=No-Accelerator}}"
+		echo -e "${_line}\n"
+	done
+}
+
+#
 # List all bookmarks
 #
 
 list_bookmarks() {
-	echo
-#	cat $BOOKMARKS \
-
-	cat "${_BM_BOOKMARK_FILE}" \
-	| awk '
-		BEGIN { FS = "|" }
-		{
-		printf "  \033[36m%s\033[0m\n", $2
-		printf "  \033[33m%s\033[0m\n", $3
-		printf "  \033[90m%s\033[0m\n\n", $4
-	}' \
-	| sed 's/^[[:space:]]*\(f\|ht\)tps*:\/\///'
-	echo
+	cat "${_BM_BOOKMARK_FILE}" |readLines
 }
 
 #
@@ -239,6 +250,18 @@ list_bookmarks() {
 #
 
 search_bookmarks() {
+	local _s=''
+	case "${1:0:1}" in
+		:) _s=2 ;; # Accelerator
+		+) _s=5 ;; # Tags
+		=) _s=1 ;; # MD5 part
+		/) _s=3 ;; # URL part
+		*) _s=0 ;; # full text search
+	esac
+	awk -F'|' '
+		$'"${_s}"' ~ /'"${1:1}"'/
+	' "${_BM_BOOKMARK_FILE}" | readLines
+return
 	echo
 #	cat $BOOKMARKS \
 
@@ -551,16 +574,17 @@ defineColors() {
 #set -xv
 checkBinaries
 
+defineColors
 # Until arguments are not checked, the config is called before
 config "${__c}"
 [[ ${_BM_CMD_CAPTURE_CHECK} ]] && checkBinaries "${_BM_CMD_CAPTURE}"
 
-defineColors 1
 
 ##############################################################################
 
 if [ ! -f "${_BM_BOOKMARK_FILE}" -a ${_BM_CREATE_BOOKMARK_FILE} ]; then
-	echo "bd8b3eff7fa82a0382a3e7576c5363b6|https://github.com/Flyounet/bm/|bm a cool bookmark tool for your console|default" >> "${_BM_BOOKMARK_FILE}"
+	echo "bd8b3eff7fa82a0382a3e7576c5363b6|https://github.com/Flyounet/bm/|bm a cool enhanced bookmark tool for your console|default,shell" >> "${_BM_BOOKMARK_FILE}"
+	echo "2981b5cae113491ddb18e0d51454f0d9|https://github.com/tj/bm/|The original bm : a cool bookmark tool for your console|default,shell" >> "${_BM_BOOKMARK_FILE}"
 fi
 
 [[ ${#} -eq 0 && ${_BM_NO_ARGS_FORCE_HELP:=0} -eq 0 ]] && list_bookmarks && exit 0
@@ -579,6 +603,7 @@ while test $# -ne 0; do
     view) view_bookmark_screenshots "$@"; exit ;;
     stats|statistics) show_statistics; exit ;;
     clear) clear_bookmarks; exit ;;
+    colors) defineColors 1; exit ;;
     *) open_bookmark $arg; exit ;;
   esac
 done
