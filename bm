@@ -574,6 +574,7 @@ defineColors() {
 #set -xv
 checkBinaries
 
+# defineColors MUST be called before the config() or _BM_PRINT_LINE will be in trouble.
 defineColors
 # Until arguments are not checked, the config is called before
 config "${__c}"
@@ -604,11 +605,12 @@ while test $# -ne 0; do
     stats|statistics) show_statistics; exit ;;
     clear) clear_bookmarks; exit ;;
     colors) defineColors 1; exit ;;
+-g) echo "g";;
     *) open_bookmark $arg; exit ;;
   esac
 done
 
-exit 0
+#exit 0
 
 ##################### TRANSITIONNAL ############################
 
@@ -625,17 +627,35 @@ if [[ ${1:-} =~ ${_regex} ]]; then
         esac
 else
 # -c config file
+# -C colors print ==> exit
 # -b bookmark file
+# -d delete
+# -D deletefile if set override _BM_DELETE_TO_FILE to true
 # -w working dir
-# -a add url
+# -a add url  =/= -l, -s, -S, -O, -o, -x, -X, -g, -C
 # -A Accelerator
 # -T title
 # -t tags
+# -s search
+# -S stats
+# -l list all url
+# -o open
+# -O open first
+# -x copy to clipboard
+# -X copy first URL
+# -h help
+# -H more help
+# -v version
+# -V more version ?
+# -g generate html file
+# -G use this file
+# -g -g generate 1 file per tags
         # used      : -----c--------Hh--------------------------V------y------------
         # available : AaBbC-DdEeFfGg--IiJjKkLlMmNnOoPpQqRrSsTtUu-vWwXxY-Zz0123456789
-        while getopts ":d:f:p:r:s:S:w:bDhHlntxX" option; do
+        while getopts ":d:f:p:r:s:S:w:gbDhHlntxX" option; do
                 case ${option} in
                         c) __c="${OPTARG}";;
+			g) (( __g++ ));;
 			y) __y=1;;
 			V) echo "${0} v${VERSION}"; exit 0;;
                         ?|H|h) usage; exit 0;;
@@ -659,16 +679,12 @@ else
                         x) __x=1;;
                         X) __X=1;;
                 esac
+echo ${__g}
         done
 fi
-
+echo ${__g}
+exit
 config "${__c}"
-
-# Check du sed
-# echo toto > fichier
-# sed -i.bak -s 's;toto;tata;' fichier
-# grep tata c'est ok sinon pas top
-# rm des 2 fichiers
 
 # Il doit y avoir un default tag
 
