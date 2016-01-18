@@ -4,9 +4,6 @@
 readonly _BM_DEFAULT_CONFIG_FILENAME="${_BM_DEFAULT_CONFIG_FILENAME:=bm.conf}"
 
 
-
-
-
 config() {
 	echo "Reading Configuration..." >&2
 	[[ "${__w:=$HOME}" != "${HOME}" ]] && echo "Working dir changed to ${__w}"
@@ -76,7 +73,7 @@ config() {
 	fi
 
 	# _BM_PRINT_LINE : This line is used to print datas
-	export _BM_PRINT_LINE="${_BM_PRINT_LINE:=${UNDERLINE}${GRAY_LIGHT}BM_URL${RESET} --> ${RESET}BM_TITLE ${GRAY_DARK}[BM_TAGS]\n${BOLD}${GRAY}BM_ACCEL ${GRAY_DARK}(BM_MD5)${RESET}}"
+	export _BM_PRINT_LINE="${_BM_PRINT_LINE:=${UNDERLINE}${GRAY_LIGHT}BM_URL${RESET} --> ${RESET}BM_TITLE ${GRAY_DARK}[BM_TAGS]\n${BOLD}${GRAY}BM_ACCEL ${GRAY_DARK}(BM_MD5)${RESET} - ${GRAY_DARK}Added: BM_DATE${RESET}}"
 
 	# _BM_PRINT_SCHEME : If set to no, bm will remove scheme from URL printing
 	export _BM_PRINT_SCHEME=${_BM_PRINT_SCHEME:=true}
@@ -108,7 +105,7 @@ slug() {
 
 # version
 
-VERSION="0.4.1-Flyou"
+VERSION="0.5.0-$Id$"
 
 # bookmarks dir
 
@@ -190,12 +187,37 @@ Usage: ${0} command [option(s)]
 EOF
 }
 
+getAccelMax() {
+	awk -F'|' '
+		BEGIN { m=0; }
+		$2 ~ /^[[:SPACE:]]*:[[:SPACE:]]*[0-9][[:SPACE:]]*+$/ { n=gensub(/:([0-9]+)/, "\\1", "g", $2); if (n>m) m=n; }
+		END { print m; }
+	' "${_BM_BOOKMARK_FILE}"
+}
+
+saveUrl() {
+	local _sum="$(${_BM_CMD_MD5} <<< "${__url}")"
+	if [ ${_BM_DUPS_DETECT} ]; then
+		if [ ! -z "$(awk -F '|' '$1 ~ /'"${_sum%% *}"'/' "${_BM_BOOKMARK_FILE}")" ]; then
+			die "URL is already in the Bookmark file"
+		fi
+	fi
+	if [ ${_BM_GET_PAGE_TITLE} -a -z "${__T:=}"]; then
+		__T="$( curl -ks "${__url}" 2>&1 | sed '/<title>/I!d;/<\/title>/I!d;s;^[[:space:]]*<title>\([^<]*\)<.*;\1;i' )"
+	fi
+	[[ -z "${__T:=}" ]] && __T="$(slug <<< "${__url}")"	# If no title => slug the url
+	[[ -z "${__t:=}" ]] && __t='default'			# Default tag is default
+	[[ -z "${__A:=}" ]] && __A="$(getAccelMax)"
+	[[ "${__A:0:1}" != ':' ]] && __A=":${__A}"		# If no accel => Add a number
+	echo "${_sum%% *}|${__A}|${__url}|${__T}|${__t}|$(date '+%FT%TZ')" >> "${_BM_BOOKMARK_FILE}" || die "Insert aborted into '${_BM_BOOKMARK_FILE}' !"
+	echo "${__url} inserted into '${_BM_BOOKMARK_FILE}'"
+}
+
 #
 # Add a bookmark
 #
 #   <url> [description] [tag ...] 
 #
-
 save_bookmark() {
 	local url=$1
 	local _sum="$(${_BM_CMD_MD5} <<< "${url}")"
@@ -223,7 +245,7 @@ save_bookmark() {
 
 readLines() {
 	IFS='|'
-	while read m u T t; do
+	while read m a u T t d; do
 		_line="${_BM_PRINT_LINE}"
 		_line="${_line//BM_MD5/$m}"
 		if [ ! ${_BM_PRINT_SCHEME} ]; then
@@ -233,6 +255,7 @@ readLines() {
 		_line="${_line//BM_TITLE/$T}"
 		_line="${_line//BM_TAGS/$t}"
 		_line="${_line//BM_ACCEL/${a:=No-Accelerator}}"
+		_line="${_line//BM_DATE/${d}}"
 		echo -e "${_line}\n"
 	done
 }
@@ -508,7 +531,7 @@ checkBinaries() {
 	if [ ${#} -ne 0 ]; then
 		local cmdErr="${@}"
 	else
-		local cmdErr="sed awk date iconv head cat ${_BM_CMD_OPEN} ${_BM_CMD_MD5}"
+		local cmdErr="sed awk date iconv head cat curl ${_BM_CMD_OPEN} ${_BM_CMD_MD5}"
 	fi
 	set ${cmdErr}
 	while [ ${#} -ne 0 ]; do
@@ -566,8 +589,17 @@ defineColors() {
 		exit 0
 	fi
 }
-
-
+#tototo() {
+#	unset tabb
+#	declare -a tabb
+#	export tabb
+#	readarray -t tabb < <( sed -e 's;|;\n;g' )
+#}
+#echo "bd8b3eff7fa82a0382a3e7576c5363b6|:bm|https://github.com/Flyounet/bm/|bm a cool enhanced bookmark tool for your console|default,shell|$(date '+%FT%TZ')" | tototo
+#echo ${tabb[0]}
+#echo ${#tabb[@]}
+#echo ${tabb[2]}
+#exit
 ##############################################################################
 # MAIN
 ##############################################################################
@@ -583,9 +615,16 @@ config "${__c}"
 
 ##############################################################################
 
+# 1 : MD5
+# 2 : :Accel
+# 3 : URL
+# 4 : Title
+# 5 : tags
+# 6 : creation date
+
 if [ ! -f "${_BM_BOOKMARK_FILE}" -a ${_BM_CREATE_BOOKMARK_FILE} ]; then
-	echo "bd8b3eff7fa82a0382a3e7576c5363b6|https://github.com/Flyounet/bm/|bm a cool enhanced bookmark tool for your console|default,shell" >> "${_BM_BOOKMARK_FILE}"
-	echo "2981b5cae113491ddb18e0d51454f0d9|https://github.com/tj/bm/|The original bm : a cool bookmark tool for your console|default,shell" >> "${_BM_BOOKMARK_FILE}"
+	echo "bd8b3eff7fa82a0382a3e7576c5363b6|:bm|https://github.com/Flyounet/bm/|bm a cool enhanced bookmark tool for your console|default,shell|$(date '+%FT%TZ')" >> "${_BM_BOOKMARK_FILE}"
+	echo "2981b5cae113491ddb18e0d51454f0d9|:bmtj|https://github.com/tj/bm/|The original bm : a cool bookmark tool for your console|default,shell|$(date '+%FT%TZ')" >> "${_BM_BOOKMARK_FILE}"
 fi
 
 [[ ${#} -eq 0 && ${_BM_NO_ARGS_FORCE_HELP:=0} -eq 0 ]] && list_bookmarks && exit 0
@@ -650,14 +689,19 @@ else
 # -g generate html file
 # -G use this file
 # -g -g generate 1 file per tags
-        # used      : -----c--------Hh--------------------------V------y------------
-        # available : AaBbC-DdEeFfGg--IiJjKkLlMmNnOoPpQqRrSsTtUu-vWwXxY-Zz0123456789
-        while getopts ":d:f:p:r:s:S:w:gbDhHlntxX" option; do
+        # used      : -a-bCc-------gHh----------------------Tt--Vv-w----------------
+        # available : A-B---DdEeFfG---IiJjKkLlMmNnOoPpQqRrSs--Uu--W-XxYyZz0123456789
+        while getopts ":b:c:t:T:w:CghHV?" option; do
                 case ${option} in
-                        c) __c="${OPTARG}";;
-			g) (( __g++ ));;
-			y) __y=1;;
-			V) echo "${0} v${VERSION}"; exit 0;;
+                        a) __a=1; __url="${OPTARG}";;	# Add url to bookmark
+                        b) __b="${OPTARG}";;	# Bookmark file
+                        c) __c="${OPTARG}";;	# Config file
+			C) defineColors 1; exit 0;;
+			g) (( __g++ ));;	# generate html file(s)
+			v|V) echo "${0} v${VERSION}"; exit 0;;
+                        t) __t="${OPTARG}";;	# tags for a URL
+                        T) __T="${OPTARG}";;	# Title for a URL
+                        w) __w="${OPTARG}";;	# Working directory
                         ?|H|h) usage; exit 0;;
                         *) echo "Argument unknown" >&2; usage;;
 
