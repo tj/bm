@@ -188,10 +188,11 @@ EOF
 }
 
 getAccelMax() {
+#		$2 ~ /^[[:SPACE:]]*:[[:SPACE:]]*[0-9][[:SPACE:]]*+$/ { n=gensub(/:([0-9])+/, "\\1", "g", $2); if (n>m) m=n; }
 	awk -F'|' '
 		BEGIN { m=0; }
-		$2 ~ /^[[:SPACE:]]*:[[:SPACE:]]*[0-9][[:SPACE:]]*+$/ { n=gensub(/:([0-9]+)/, "\\1", "g", $2); if (n>m) m=n; }
-		END { print m; }
+		$2 ~ /^[:space:]*:[:space:]*[0-9]+[:space:]*$/ { sub(/:+/, "", $2); if ($2>m) m=$2; }
+		END { print m+1; }
 	' "${_BM_BOOKMARK_FILE}"
 }
 
@@ -202,7 +203,7 @@ saveUrl() {
 			die "URL is already in the Bookmark file"
 		fi
 	fi
-	if [ ${_BM_GET_PAGE_TITLE} -a -z "${__T:=}"]; then
+	if [ ${_BM_GET_PAGE_TITLE} -a -z "${__T:=}" ]; then
 		__T="$( curl -ks "${__url}" 2>&1 | sed '/<title>/I!d;/<\/title>/I!d;s;^[[:space:]]*<title>\([^<]*\)<.*;\1;i' )"
 	fi
 	[[ -z "${__T:=}" ]] && __T="$(slug <<< "${__url}")"	# If no title => slug the url
@@ -651,11 +652,8 @@ fi
 #exit 0
 
 ##################### TRANSITIONNAL ############################
-echo "av reg"
 _regex='^(tags|ls|list|search|open|add|view|stats|statistics|clear|colors)$'
-echo "ap reg"
 if [[ ${1:-} =~ ${_regex} ]]; then
-echo "av case args"
         case "$1" in
                 tags) list_tags ;;
                 ls|list) list_bookmarks ;;
@@ -667,7 +665,6 @@ echo "av case args"
 		clear) clear_bookmarks; exit ;;
 		colors) __C=1;;
         esac
-echo "ap case args"
 else
 #q -c config file
 # -C colors print ==> exit
@@ -695,11 +692,10 @@ else
 # -g -g generate 1 file per tags
         # used      : -a-bCc-------gHh----------------------Tt--Vv-w----------------
         # available : A-B---DdEeFfG---IiJjKkLlMmNnOoPpQqRrSs--Uu--W-XxYyZz0123456789
-echo "in else"
-        while getopts ":a:b:c:t:T:w:CghHV" option; do
-echo "in while"
+        while getopts ":a:A:b:c:t:T:w:CghHvV" option; do
                 case ${option} in
                         a) __a=1; __url="${OPTARG}";;	# Add url to bookmark
+			A) __A="${OPTARG}";;	# AcceleratoR
                         b) __b="${OPTARG}";;	# Bookmark file
                         c) __c="${OPTARG}";;	# Config file
 			C) __C=1;;
@@ -730,6 +726,7 @@ if [ ! -z "${__w:=}" -a ! -d "${__w}" ]; then
 fi
 config "${__c:=}"
 
+[[ ${__a} -eq 1 ]] && { saveUrl ;  exit ; }
 [[ ${__C:=0} -eq 1 ]] && defineColors 1 && exit 0 
 
 # Il doit y avoir un default tag
