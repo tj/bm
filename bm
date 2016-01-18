@@ -630,42 +630,46 @@ fi
 [[ ${#} -eq 0 && ${_BM_NO_ARGS_FORCE_HELP:=0} -eq 0 ]] && list_bookmarks && exit 0
 # parse args
 
-while test $# -ne 0; do
-  arg=$1; shift
-  case $arg in
-    -V|--version) echo $VERSION; exit ;;
-    -h|--help) usage; exit ;;
-    tags) list_tags; exit ;;
-    ls|list) list_bookmarks; exit ;;
-    search) search_bookmarks "$@"; exit ;;
-    open) open_bookmark "$@"; exit ;;
-    add) save_bookmark "$@"; exit ;;
-    view) view_bookmark_screenshots "$@"; exit ;;
-    stats|statistics) show_statistics; exit ;;
-    clear) clear_bookmarks; exit ;;
-    colors) defineColors 1; exit ;;
--g) echo "g";;
-    *) open_bookmark $arg; exit ;;
-  esac
-done
+#while test $# -ne 0; do
+#  arg=$1; shift
+#  case $arg in
+#    -V|--version) echo $VERSION; exit ;;
+#    -h|--help) usage; exit ;;
+#    tags) list_tags; exit ;;
+#    ls|list) list_bookmarks; exit ;;
+#    search) search_bookmarks "$@"; exit ;;
+#    open) open_bookmark "$@"; exit ;;
+#    add) save_bookmark "$@"; exit ;;
+#    view) view_bookmark_screenshots "$@"; exit ;;
+#    stats|statistics) show_statistics; exit ;;
+#    clear) clear_bookmarks; exit ;;
+#    colors) defineColors 1; exit ;;
+#    *) open_bookmark $arg; exit ;;
+#  esac
+#done
 
 #exit 0
 
 ##################### TRANSITIONNAL ############################
-
-_regex='^(tags|ls|list|searxh|open|add|view|stats|statistics|clear)$'
+echo "av reg"
+_regex='^(tags|ls|list|search|open|add|view|stats|statistics|clear|colors)$'
+echo "ap reg"
 if [[ ${1:-} =~ ${_regex} ]]; then
+echo "av case args"
         case "$1" in
-                bake) __b=1 ;;
-                post) __p=1; __post="${@:2}" ;;
-                list) __l=1;;
-                toggle) __t=1; __post="${@:2}" ;;
-                date) __d=1; __post="${@:2}" ;;
-                rename) __r=1; __post="${@:2}" ;;
-                *) usage ;;
+                tags) list_tags ;;
+                ls|list) list_bookmarks ;;
+                search) search_bookmarks "${@:1}" ;;
+                open) open_bookmarks "${@:1}" ;;
+                add) __a=1; __url="${1:-}"; __T="${2:-}"; __t="${3:-}"; __A="${4:-}"; saveUrl; exit ;;
+                view) view_bookmark_screenshots "${:1}"; exit ;;
+		stats|statistics) show_statistics; exit ;;
+		clear) clear_bookmarks; exit ;;
+		colors) __C=1;;
         esac
+echo "ap case args"
 else
-# -c config file
+#q -c config file
 # -C colors print ==> exit
 # -b bookmark file
 # -d delete
@@ -691,44 +695,42 @@ else
 # -g -g generate 1 file per tags
         # used      : -a-bCc-------gHh----------------------Tt--Vv-w----------------
         # available : A-B---DdEeFfG---IiJjKkLlMmNnOoPpQqRrSs--Uu--W-XxYyZz0123456789
-        while getopts ":b:c:t:T:w:CghHV?" option; do
+echo "in else"
+        while getopts ":a:b:c:t:T:w:CghHV" option; do
+echo "in while"
                 case ${option} in
                         a) __a=1; __url="${OPTARG}";;	# Add url to bookmark
                         b) __b="${OPTARG}";;	# Bookmark file
                         c) __c="${OPTARG}";;	# Config file
-			C) defineColors 1; exit 0;;
+			C) __C=1;;
 			g) (( __g++ ));;	# generate html file(s)
 			v|V) echo "${0} v${VERSION}"; exit 0;;
                         t) __t="${OPTARG}";;	# tags for a URL
                         T) __T="${OPTARG}";;	# Title for a URL
                         w) __w="${OPTARG}";;	# Working directory
-                        ?|H|h) usage; exit 0;;
-                        *) echo "Argument unknown" >&2; usage;;
+                        H|h) usage; exit 0;;
+			:) echo "Missing argument for '-${OPTARG}'" >&2 ; exit 1 ;;
+                        *) echo "Argument unknown '-${option}'" >&2 ; exit 1 ;; # usage;;
 
-
-
-
-                        b) __b=1;;
-                        d) __d=1;__post="${OPTARG}";;
-                        D) __D=1;;
-                        l) __l=1;;
-                        f) __f="${OPTARG}";;
-                        n) __n=1;;
-                        p) __p=1;__post="${OPTARG}";;
-                        r) __r=1;__post="${OPTARG}";;
-                        s) __s=1;__post="${OPTARG}";;
-                        S) [[ "${OPTARG,,}" =~ ^(user|all|none)$ ]] || die "Argument '${OPTARG}' unknown."; export PRINT_ALL_SUMMARY="${OPTARG,,}";;
-                        t) __t=1;;
-                        w) [[ -d "${OPTARG}" ]] && __w="$( cd ${OPTARG}; pwd)/";;
-                        x) __x=1;;
-                        X) __X=1;;
                 esac
-echo ${__g}
         done
 fi
-echo ${__g}
-exit
-config "${__c}"
+
+if [ $(( ${__a:=0} + ${__C:=0} + ${__d:=0} + ${__g:=0} + ${__l:=0} + ${__o:=0} + ${__x:=0} + ${__s:=0} )) -gt 1 ]; then
+        echo "You have to choose between -a, -C, -d, -g, -l, -o, -s, -x" >&2
+        echo "Use -h for help" >&2
+	exit 0
+#elif [ $(( ${__b:=0} + ${__d:=0} + ${__l:=0} + ${__p:=0} + ${__r:=0} + ${__s:=0} )) -lt 1 ]; then
+#        echo "Nothing to do ?" >&2
+#        usage
+fi
+if [ ! -z "${__w:=}" -a ! -d "${__w}" ]; then
+        echo "Working directory doesn't exist !" >&2
+        usage
+fi
+config "${__c:=}"
+
+[[ ${__C:=0} -eq 1 ]] && defineColors 1 && exit 0 
 
 # Il doit y avoir un default tag
 
