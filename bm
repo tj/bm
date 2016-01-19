@@ -77,6 +77,9 @@ config() {
 
 	# _BM_PRINT_SCHEME : If set to no, bm will remove scheme from URL printing
 	export _BM_PRINT_SCHEME=${_BM_PRINT_SCHEME:=true}
+
+	# _BM_SEARCH_IGNORECASE : Ignore case if set when searching
+	export _BM_SEARCH_IGNORECASE=${_BM_SEARCH_IGNORECASE:=false}
 }
 
 
@@ -223,6 +226,7 @@ saveUrl() {
 	[[ "${__A:0:1}" != ':' ]] && __A=":${__A}"		# If no accel => Add a number
 	echo "${_sum%% *}|${__A}|${__url}|${__T}|${__t}|$(date '+%FT%TZ')" >> "${_BM_BOOKMARK_FILE}" || die "Insert aborted into '${_BM_BOOKMARK_FILE}' !"
 	echo "${__url} inserted into '${_BM_BOOKMARK_FILE}'"
+	search_bookmarks "${__A}"
 }
 
 #
@@ -287,14 +291,18 @@ list_bookmarks() {
 search_bookmarks() {
 	local _s=''
 	case "${1:0:1}" in
-		:) _s=2 ;; # Accelerator
-		+) _s=5 ;; # Tags
-		=) _s=1 ;; # MD5 part
-		/) _s=3 ;; # URL part
-		*) _s=0 ;; # full text search
+		:) _s=2; _ss=0 ;; # Accelerator
+		+) _s=5; _ss=1 ;; # Tags
+		=) _s=1; _ss=1 ;; # MD5 part
+		/) _s=3; _ss=1 ;; # URL part
+		*) _s=0; _ss=0 ;; # full text search
 	esac
-	awk -F'|' '
-		$'"${_s}"' ~ /'"${1:1}"'/
+	[[ ${_BM_SEARCH_IGNORECASE} = true || ${__i:=0} -eq 1 ]] && local _ign=1
+	awk -F'|' -vIgn=${_ign:=0} '
+		BEGIN {
+			if (Ign == 1) { s=tolower("'"${1:${_ss}}"'"); } else { s="'"${1:${_ss}}"'"; }
+		}
+		(Ign == 0 && $'"${_s}"' ~ s) || (Ign ==1 && tolower($'"${_s}"') ~ s) {print $0;}
 	' "${_BM_BOOKMARK_FILE}" | readLines
 return
 	echo
@@ -640,27 +648,8 @@ if [ ! -f "${_BM_BOOKMARK_FILE}" -a ${_BM_CREATE_BOOKMARK_FILE} = true ]; then
 fi
 
 [[ ${#} -eq 0 && ${_BM_NO_ARGS_FORCE_HELP:=0} -eq 0 ]] && list_bookmarks && exit 0
+
 # parse args
-
-#while test $# -ne 0; do
-#  arg=$1; shift
-#  case $arg in
-#    -V|--version) echo $VERSION; exit ;;
-#    -h|--help) usage; exit ;;
-#    tags) list_tags; exit ;;
-#    ls|list) list_bookmarks; exit ;;
-#    search) search_bookmarks "$@"; exit ;;
-#    open) open_bookmark "$@"; exit ;;
-#    add) save_bookmark "$@"; exit ;;
-#    view) view_bookmark_screenshots "$@"; exit ;;
-#    stats|statistics) show_statistics; exit ;;
-#    clear) clear_bookmarks; exit ;;
-#    colors) defineColors 1; exit ;;
-#    *) open_bookmark $arg; exit ;;
-#  esac
-#done
-
-#exit 0
 
 ##################### TRANSITIONNAL ############################
 _regex='^(tags|ls|list|search|open|add|view|stats|statistics|clear|colors)$'
@@ -701,28 +690,30 @@ else
 # -g generate html file
 # -G use this file
 # -g -g generate 1 file per tags
-        # used      : Aa-bCc----F--gHh----------------------Tt--Vv-w----------------
-        # available : --B---DdEe-fG---IiJjKkLlMmNnOoPpQqRrSs--Uu--W-XxYyZz0123456789
-        while getopts ":a:A:b:c:t:T:w:CFghHvV" option; do
-                case ${option} in
-                        a) __a=1; __url="${OPTARG}";;	# Add url to bookmark
+        # used      : Aa-bCc----F--gHh-i-----l-------------sTt--Vv-w----------------
+        # available : --B---DdEe-fG---I-JjKkL-MmNnOoPpQqRrS---Uu--W-XxYyZz0123456789
+	while getopts ":a:A:b:c:s:t:T:w:CFghHilvV" option; do
+		case ${option} in
+			a) __a=1; __url="${OPTARG}";;	# Add url to bookmark
 			A) __A="${OPTARG}";;	# AcceleratoR
-                        b) __b="${OPTARG}";;	# Bookmark file
-                        c) __c="${OPTARG}";;	# Config file
-			C) __C=1;;
+			b) __b="${OPTARG}";;	# Bookmark file
+			c) __c="${OPTARG}";;	# Config file
+			C) __C=1;;		# Print color table
 			F) __F=1;;		# Force the add or delete
 			g) (( __g++ ));;	# generate html file(s)
+			H|h) usage; exit 0;;	# Help
+			i) __i=1;;		# Ignore case when searching
+			l) __i=1;;		# Ignore case when searching
+			s) __s=1; __search="${OPTARG}";;	# Search
+			t) __t="${OPTARG}";;	# tags for a URL
+			T) __T="${OPTARG}";;	# Title for a URL
 			v|V) echo "${0} v${VERSION}"; exit 0;;
-                        t) __t="${OPTARG}";;	# tags for a URL
-                        T) __T="${OPTARG}";;	# Title for a URL
-                        w) __w="${OPTARG}";;	# Working directory
-                        H|h) usage; exit 0;;
+			w) __w="${OPTARG}";;	# Working directory
 			:) echo "Missing argument for '-${OPTARG}'" >&2 ; exit 1 ;;
-                        ?) echo "Argument unknown '-${OPTARG}'" >&2 ; exit 1 ;; # usage;;
-                        *) echo "Argument unknown '-${option}'" >&2 ; exit 1 ;; # usage;;
-
-                esac
-        done
+			?) echo "Argument unknown '-${OPTARG}'" >&2 ; exit 1 ;; # usage;;
+			*) echo "Argument unknown '-${option}'" >&2 ; exit 1 ;; # usage;;
+		esac
+	done
 fi
 
 if [ $(( ${__a:=0} + ${__C:=0} + ${__d:=0} + ${__g:=0} + ${__l:=0} + ${__o:=0} + ${__x:=0} + ${__s:=0} )) -gt 1 ]; then
@@ -740,6 +731,8 @@ fi
 config "${__c:=}"
 
 [[ ${__a} -eq 1 ]] && { saveUrl ;  exit ; }
+[[ ${__s} -eq 1 ]] && { search_bookmarks "${__search}" ; exit; }
+[[ ${__l} -eq 1 ]] && { search_bookmarks "" ; exit; }
 [[ ${__C:=0} -eq 1 ]] && defineColors 1 && exit 0 
 
 # Il doit y avoir un default tag
