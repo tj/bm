@@ -290,6 +290,7 @@ list_bookmarks() {
 
 search_bookmarks() {
 	local _s=''
+	[[ -z "${1:-}" ]] && readLines < "${_BM_BOOKMARK_FILE}" && return
 	case "${1:0:1}" in
 		:) _s=2; _ss=0 ;; # Accelerator
 		+) _s=5; _ss=1 ;; # Tags
@@ -304,21 +305,6 @@ search_bookmarks() {
 		}
 		(Ign == 0 && $'"${_s}"' ~ s) || (Ign ==1 && tolower($'"${_s}"') ~ s) {print $0;}
 	' "${_BM_BOOKMARK_FILE}" | readLines
-return
-	echo
-#	cat $BOOKMARKS \
-
-	cat "${_BM_BOOKMARK_FILE}" \
-	| grep $1 \
-	| awk '
-		BEGIN { FS = "|" }
-		{
-		printf "  \033[36m%s\033[0m\n", $2
-		printf "  \033[33m%s\033[0m\n", $3
-		printf "  \033[90m%s\033[0m\n\n", $4
-	}' \
-	| sed 's/^[[:space:]]*\(f\|ht\)tps*:\/\///'
-	echo
 }
 
 #
@@ -551,7 +537,7 @@ checkBinaries() {
 	if [ ${#} -ne 0 ]; then
 		local cmdErr="${@}"
 	else
-		local cmdErr="sed awk date iconv head cat curl ${_BM_CMD_OPEN} ${_BM_CMD_MD5}"
+		local cmdErr="sed awk date iconv head cat curl ${_BM_CMD_OPEN} ${_BM_CMD_MD5} column"
 	fi
 	set ${cmdErr}
 	while [ ${#} -ne 0 ]; do
@@ -624,31 +610,6 @@ defineColors() {
 # MAIN
 ##############################################################################
 #set -xv
-checkBinaries
-
-# defineColors MUST be called before the config() or _BM_PRINT_LINE will be in trouble.
-defineColors
-# Until arguments are not checked, the config is called before
-config "${__c}"
-[[ ${_BM_CMD_CAPTURE_CHECK} ]] && checkBinaries "${_BM_CMD_CAPTURE}"
-
-
-##############################################################################
-
-# 1 : MD5
-# 2 : :Accel
-# 3 : URL
-# 4 : Title
-# 5 : tags
-# 6 : creation date
-
-if [ ! -f "${_BM_BOOKMARK_FILE}" -a ${_BM_CREATE_BOOKMARK_FILE} = true ]; then
-	echo "bd8b3eff7fa82a0382a3e7576c5363b6|:bm|https://github.com/Flyounet/bm/|bm a cool enhanced bookmark tool for your console|default,shell|$(date '+%FT%TZ')" >> "${_BM_BOOKMARK_FILE}"
-	echo "2981b5cae113491ddb18e0d51454f0d9|:bmtj|https://github.com/tj/bm/|The original bm : a cool bookmark tool for your console|default,shell|$(date '+%FT%TZ')" >> "${_BM_BOOKMARK_FILE}"
-fi
-
-[[ ${#} -eq 0 && ${_BM_NO_ARGS_FORCE_HELP:=0} -eq 0 ]] && list_bookmarks && exit 0
-
 # parse args
 
 ##################### TRANSITIONNAL ############################
@@ -656,8 +617,8 @@ _regex='^(tags|ls|list|search|open|add|view|stats|statistics|clear|colors)$'
 if [[ ${1:-} =~ ${_regex} ]]; then
         case "$1" in
                 tags) list_tags ;;
-                ls|list) list_bookmarks ;;
-                search) search_bookmarks "${@:1}" ;;
+                ls|list) __l=1 ;;
+                search) __s=1; __search="${@:2}" ;;
                 open) open_bookmarks "${@:1}" ;;
                 add) __a=1; __url="${1:-}"; __T="${2:-}"; __t="${3:-}"; __A="${4:-}"; saveUrl; exit ;;
                 view) view_bookmark_screenshots "${:1}"; exit ;;
@@ -703,7 +664,7 @@ else
 			g) (( __g++ ));;	# generate html file(s)
 			H|h) usage; exit 0;;	# Help
 			i) __i=1;;		# Ignore case when searching
-			l) __i=1;;		# Ignore case when searching
+			l) __l=1;;		# Ignore case when searching
 			s) __s=1; __search="${OPTARG}";;	# Search
 			t) __t="${OPTARG}";;	# tags for a URL
 			T) __T="${OPTARG}";;	# Title for a URL
@@ -716,28 +677,41 @@ else
 	done
 fi
 
+# Parsing args is done, Starting to work, so check if binaries are here
+checkBinaries
+
+# defineColors MUST be called before the config() or _BM_PRINT_LINE will be in trouble.
+defineColors
+# Before loading config, checking if working dir exist...
+if [ ! -z "${__w:=}" -a ! -d "${__w}" ]; then
+	die "Working directory '${__w}' doesn't exist !" >&2
+fi
+# Loading config
+config "${__c}"
+
+# Following config, we maybe not have to check the capture tool
+[[ ${_BM_CMD_CAPTURE_CHECK} ]] && checkBinaries "${_BM_CMD_CAPTURE}"
+
+# If no bookmark file exist, create one if allowed
+if [ ! -f "${_BM_BOOKMARK_FILE}" -a ${_BM_CREATE_BOOKMARK_FILE} = true ]; then
+	# Remember fields : 1=md5, 2=accel, 3=url, 4=title, 5=tags, 6=date of bookmark
+	echo "bd8b3eff7fa82a0382a3e7576c5363b6|:bm|https://github.com/Flyounet/bm/|bm a cool enhanced bookmark tool for your console|default,shell|$(date '+%FT%TZ')" >> "${_BM_BOOKMARK_FILE}"
+	echo "2981b5cae113491ddb18e0d51454f0d9|:bmtj|https://github.com/tj/bm/|The original bm : a cool bookmark tool for your console|default,shell|$(date '+%FT%TZ')" >> "${_BM_BOOKMARK_FILE}"
+fi
+
+# Starting to work with args. If none probably list...
+[[ ${#} -eq 0 && ${_BM_NO_ARGS_FORCE_HELP:=0} -eq 0 ]] && __l=1
+
+# Only one action at a time
 if [ $(( ${__a:=0} + ${__C:=0} + ${__d:=0} + ${__g:=0} + ${__l:=0} + ${__o:=0} + ${__x:=0} + ${__s:=0} )) -gt 1 ]; then
         echo "You have to choose between -a, -C, -d, -g, -l, -o, -s, -x" >&2
         echo "Use -h for help" >&2
 	exit 0
-#elif [ $(( ${__b:=0} + ${__d:=0} + ${__l:=0} + ${__p:=0} + ${__r:=0} + ${__s:=0} )) -lt 1 ]; then
-#        echo "Nothing to do ?" >&2
-#        usage
 fi
-if [ ! -z "${__w:=}" -a ! -d "${__w}" ]; then
-        echo "Working directory doesn't exist !" >&2
-        usage
-fi
-config "${__c:=}"
 
+# Executing actions
 [[ ${__a} -eq 1 ]] && { saveUrl ;  exit ; }
 [[ ${__s} -eq 1 ]] && { search_bookmarks "${__search}" ; exit; }
-[[ ${__l} -eq 1 ]] && { search_bookmarks "" ; exit; }
-[[ ${__C:=0} -eq 1 ]] && defineColors 1 && exit 0 
+[[ ${__l} -eq 1 ]] && { search_bookmarks ; exit; }
+[[ ${__C:=0} -eq 1 ]] && { defineColors 1 ; exit ; }
 
-# Il doit y avoir un default tag
-
-# Header :
-# + counter URLs open
-# + counter URLs copied
-# + counter URLs deleted
