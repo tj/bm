@@ -197,13 +197,24 @@ getAccelMax() {
 }
 
 saveUrl() {
-	local _sum="$(${_BM_CMD_MD5} <<< "${__url}")"
-	if [ ${_BM_DUPS_DETECT} ]; then
-		if [ ! -z "$(awk -F '|' '$1 ~ /'"${_sum%% *}"'/' "${_BM_BOOKMARK_FILE}")" ]; then
-			die "URL is already in the Bookmark file"
+	if [ "$(sed 's/^[[:space:]]*\(f\|ht\)tps*:\/\/.*$/totoz/' <<< "${__url}")" != 'totoz' ]; then
+		if [ ${__F:=0} -eq 0 ]; then
+			die "Your URL seems invalid '${__url}'. Use -F to force."
+		else
+			echo "Force adding invalid URL" >&2
 		fi
 	fi
-	if [ ${_BM_GET_PAGE_TITLE} -a -z "${__T:=}" ]; then
+	local _sum="$(${_BM_CMD_MD5} <<< "${__url}")"
+	if [ ${_BM_DUPS_DETECT} = true ]; then
+		if [ ! -z "$(awk -F '|' '$1 ~ /'"${_sum%% *}"'/' "${_BM_BOOKMARK_FILE}")" ]; then
+			if [ ${__F:=0} -eq 0 ]; then
+				die "URL is already in the Bookmark file"
+			else
+				echo "Force adding duplicate URL" >&2
+			fi
+		fi
+	fi
+	if [ ${_BM_GET_PAGE_TITLE} = true -a -z "${__T:=}" ]; then
 		__T="$( curl -ks "${__url}" 2>&1 | sed '/<title>/I!d;/<\/title>/I!d;s;^[[:space:]]*<title>\([^<]*\)<.*;\1;i' )"
 	fi
 	[[ -z "${__T:=}" ]] && __T="$(slug <<< "${__url}")"	# If no title => slug the url
@@ -249,7 +260,7 @@ readLines() {
 	while read m a u T t d; do
 		_line="${_BM_PRINT_LINE}"
 		_line="${_line//BM_MD5/$m}"
-		if [ ! ${_BM_PRINT_SCHEME} ]; then
+		if [ ${_BM_PRINT_SCHEME} = false ]; then
 			u="$(sed 's/^[[:space:]]*\(f\|ht\)tps*:\/\///' <<< "${u}")"
 		fi
 		_line="${_line//BM_URL/$u}"
@@ -623,7 +634,7 @@ config "${__c}"
 # 5 : tags
 # 6 : creation date
 
-if [ ! -f "${_BM_BOOKMARK_FILE}" -a ${_BM_CREATE_BOOKMARK_FILE} ]; then
+if [ ! -f "${_BM_BOOKMARK_FILE}" -a ${_BM_CREATE_BOOKMARK_FILE} = true ]; then
 	echo "bd8b3eff7fa82a0382a3e7576c5363b6|:bm|https://github.com/Flyounet/bm/|bm a cool enhanced bookmark tool for your console|default,shell|$(date '+%FT%TZ')" >> "${_BM_BOOKMARK_FILE}"
 	echo "2981b5cae113491ddb18e0d51454f0d9|:bmtj|https://github.com/tj/bm/|The original bm : a cool bookmark tool for your console|default,shell|$(date '+%FT%TZ')" >> "${_BM_BOOKMARK_FILE}"
 fi
@@ -690,15 +701,16 @@ else
 # -g generate html file
 # -G use this file
 # -g -g generate 1 file per tags
-        # used      : -a-bCc-------gHh----------------------Tt--Vv-w----------------
-        # available : A-B---DdEeFfG---IiJjKkLlMmNnOoPpQqRrSs--Uu--W-XxYyZz0123456789
-        while getopts ":a:A:b:c:t:T:w:CghHvV" option; do
+        # used      : Aa-bCc----F--gHh----------------------Tt--Vv-w----------------
+        # available : --B---DdEe-fG---IiJjKkLlMmNnOoPpQqRrSs--Uu--W-XxYyZz0123456789
+        while getopts ":a:A:b:c:t:T:w:CFghHvV" option; do
                 case ${option} in
                         a) __a=1; __url="${OPTARG}";;	# Add url to bookmark
 			A) __A="${OPTARG}";;	# AcceleratoR
                         b) __b="${OPTARG}";;	# Bookmark file
                         c) __c="${OPTARG}";;	# Config file
 			C) __C=1;;
+			F) __F=1;;		# Force the add or delete
 			g) (( __g++ ));;	# generate html file(s)
 			v|V) echo "${0} v${VERSION}"; exit 0;;
                         t) __t="${OPTARG}";;	# tags for a URL
@@ -706,6 +718,7 @@ else
                         w) __w="${OPTARG}";;	# Working directory
                         H|h) usage; exit 0;;
 			:) echo "Missing argument for '-${OPTARG}'" >&2 ; exit 1 ;;
+                        ?) echo "Argument unknown '-${OPTARG}'" >&2 ; exit 1 ;; # usage;;
                         *) echo "Argument unknown '-${option}'" >&2 ; exit 1 ;; # usage;;
 
                 esac
