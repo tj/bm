@@ -133,47 +133,12 @@ HTML=/tmp/bm.html
 usage() {
   cat <<EOF
 
-  Usage: bm [options] [cmd]
-
-  Commands:
-
-    # add a bookmark with the given url, description, and optional tags
-    $ bm add <url> [desc] [tag...]
-
-    # open the first bookmark matching <query>
-    $ bm open <query>
-    $ bm <query>
-
-    # search the bookmarks via full-text <query>
-    $ bm search <query>
-
-    # list tags
-    $ bm tags
-
-    # list bookmarks available
-    $ bm list
-    $ bm ls
-    $ bm
-
-    # display statistics about the bookmarks
-    $ bm statistics
-    $ bm stats
-
-    # view bookmark screenshots in your default browser
-    $ bm view design
-    $ bm view
-
-    # clear all bookmarks
-    $ bm clear
-
-  Options:
-
-     -V, --version   output bm version
-     -h, --help      output this help information
-
-Usage: ${0} command [option(s)]
+Usage: ${0} [modifier(s)] command [option(s)]
 
 	Commands :
+	==========
+	-h/-H		Print this help
+	-v/-V		Print the version
 	-a 'URL'	Add the URL to bookmark file
 			Options for -a
 			-t "TagList"	Tags are sparated by a comma ,
@@ -181,10 +146,77 @@ Usage: ${0} command [option(s)]
 					downloaded)
 			-A "accel"	Accelerator when search for URLs (start with Accel)
 					Default is FQDN without gTld (and www, and sheme)
+			-F		Force the bookmark to be created (even if duplicate
+					or invalid)
+	
+	-l		List all URLs (default action, same thing as calling bm without args)
+
+	-s 'object'	Search for bookmarks
+			Options for -s
+			-i		Incensitive case search
+			Objects are
+				:string	Search in accelerator list
+				+string	Search in tags list
+				=string	Search in MD5 list
+				/string	Search in URL list
+				string	Search in full test
 
 	-d 'URL' or	Delete the URL from bookmark file
 	   md5sum or
-	   'part of the URL'
+	   'URL part'	Options for -d
+			-D		Delete first occurence only
+			-F		Force the bookmark to be deleted (even if duplicate)
+
+	-C		Print the color table (usefull for configuration)
+
+	-S		Show statistics about bookmarks/tags
+
+	Modifiers :
+	===========
+	-c 'file'	Use this configuration file instead of the default one
+
+	-b 'file'	Use this bookmark file instead of the default one
+
+
+
+	Old Legacy usage still available :
+	Usage: bm [options] [cmd]
+
+	Commands:
+
+	# add a bookmark with the given url, description, and optional tags
+	$ bm add <url> [desc] [tag...] [accelerator]
+
+	# open the first bookmark matching <query>
+	$ bm open <query>
+	$ bm <query>
+
+	# search the bookmarks via full-text <query>
+	$ bm search <query>
+
+	# list tags
+	$ bm tags
+
+	# list bookmarks available
+	$ bm list
+	$ bm ls
+	$ bm
+
+	# display statistics about the bookmarks
+	$ bm statistics
+	$ bm stats
+
+	# view bookmark screenshots in your default browser
+	$ bm view design
+	$ bm view
+
+	# clear all bookmarks
+	$ bm clear
+
+	Options:
+
+	-V, --version   output bm version
+	-h, --help      output this help information
 
 
 EOF
@@ -323,7 +355,25 @@ open_bookmark() {
 #
 # Diplay some statistics about the bookmarks
 #
+stats() {
+#set -xv
+	readarray -t lines < "${_BM_BOOKMARK_FILE}"
+	#local lines=${#lines[@]}
+	echo "Bookmarks	:	${#lines[@]}"
+	echo "Duplicate	:	$(awk -F'|' '{print $1}' "${_BM_BOOKMARK_FILE}" |sort |uniq -d |wc -l)"
+	local tags="$(awk -F'|' '{print $5}' "${_BM_BOOKMARK_FILE}" | sed -e 's/\([[:space:]]*,[[:space:]]*\)/\n/g')"
 
+	echo "# of tags	:	$( sort -u <<< "${tags,,}" |wc -l)"
+	echo "Top 10 tags :"
+	local nli=0;local pa=0
+#set -xv
+	sort <<< "${tags,,}" | uniq -c | while read n t; do
+		(( nli++ ));[[ ${nli} -gt 5 ]] && nli=0 && echo ''
+		(( pa++ ));[[ ${pa} -gt 10 ]] && break
+		echo -n "${t}:${n} "
+	done #| column -t
+set +xv
+}
 show_statistics() {
 	local total_bookmarks=$(cat "${_BM_BOOKMARK_FILE}" | wc -l | sed 's/^ *//')
 	local total_tags=$(list_tags | wc -l | sed 's/^ *//')
@@ -651,9 +701,9 @@ else
 # -g generate html file
 # -G use this file
 # -g -g generate 1 file per tags
-        # used      : Aa-bCc----F--gHh-i-----l-------------sTt--Vv-w----------------
-        # available : --B---DdEe-fG---I-JjKkL-MmNnOoPpQqRrS---Uu--W-XxYyZz0123456789
-	while getopts ":a:A:b:c:s:t:T:w:CFghHilvV" option; do
+        # used      : Aa-bCc----F--gHh-i-----l------------SsTt--Vv-w----------------
+        # available : --B---DdEe-fG---I-JjKkL-MmNnOoPpQqRr----Uu--W-XxYyZz0123456789
+	while getopts ":a:A:b:c:s:t:T:w:CFghHilSvV" option; do
 		case ${option} in
 			a) __a=1; __url="${OPTARG}";;	# Add url to bookmark
 			A) __A="${OPTARG}";;	# AcceleratoR
@@ -664,8 +714,9 @@ else
 			g) (( __g++ ));;	# generate html file(s)
 			H|h) usage; exit 0;;	# Help
 			i) __i=1;;		# Ignore case when searching
-			l) __l=1;;		# Ignore case when searching
+			l) __l=1;;		# List all bookmarks
 			s) __s=1; __search="${OPTARG}";;	# Search
+			S) __S=1;;		# Print Statistics
 			t) __t="${OPTARG}";;	# tags for a URL
 			T) __T="${OPTARG}";;	# Title for a URL
 			v|V) echo "${0} v${VERSION}"; exit 0;;
@@ -703,8 +754,8 @@ fi
 [[ ${#} -eq 0 && ${_BM_NO_ARGS_FORCE_HELP:=0} -eq 0 ]] && __l=1
 
 # Only one action at a time
-if [ $(( ${__a:=0} + ${__C:=0} + ${__d:=0} + ${__g:=0} + ${__l:=0} + ${__o:=0} + ${__x:=0} + ${__s:=0} )) -gt 1 ]; then
-        echo "You have to choose between -a, -C, -d, -g, -l, -o, -s, -x" >&2
+if [ $(( ${__a:=0} + ${__C:=0} + ${__d:=0} + ${__g:=0} + ${__l:=0} + ${__o:=0} + ${__x:=0} + ${__s:=0} + ${__S:=0} )) -gt 1 ]; then
+        echo "You have to choose between -a, -C, -d, -g, -l, -o, -s, -S, -x" >&2
         echo "Use -h for help" >&2
 	exit 0
 fi
@@ -713,5 +764,6 @@ fi
 [[ ${__a} -eq 1 ]] && { saveUrl ;  exit ; }
 [[ ${__s} -eq 1 ]] && { search_bookmarks "${__search}" ; exit; }
 [[ ${__l} -eq 1 ]] && { search_bookmarks ; exit; }
+[[ ${__S} -eq 1 ]] && { stats ; exit; }
 [[ ${__C:=0} -eq 1 ]] && { defineColors 1 ; exit ; }
 
