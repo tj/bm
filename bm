@@ -19,16 +19,28 @@ config() {
 	# _BM_BOOKMARK_FILE : Where is stored the bookmark file
 	export _BM_BOOKARK_FILE="${_BM_BOOKMARK_FILE:=${__w}bm.lnk}"
 
+	# _BM_BOOKMARK_BACKUP_FILE : Where is stored the backup of bookmark file
+	export _BM_BOOKARK_BACKUP_FILE="${_BM_BOOKMARK_BACKUP_FILE:=${__w}.bm.lnk.bck}"
+
+	# _BM_HTML_FILE : Location of generated HTML file
+	export _BM_HTML_FILE="${_BM_HTML_FILE:=${__w}bm.html}"
+
+	# _BM_DELETE_FILE : Where to find the deleted URLs
+	export _BM_DELETE_FILE="${_BM_DELETE_FILE:=${__w}.bm.trash}"
+
+	# _BM_BOOKMARK_BACKUP : Copy the bookmark file before each modification
+	export _BM_BOOKMARK_BACKUP=${_BM_BOOKMARK_BACKUP:=true}
+
+	# _BM_BOOKMARK_BACKUP_VERSION : How many copy to keep (0 for 1, 1 for 2, ...)
+	export _BM_BOOKMARK_BACKUP_VERSION=${_BM_BOOKMARK_BACKUP_VERSION:=2}
+
 	# _BM_DELETE_ALLOWED : Even with the force flag the delete function will not be allowed (true or false)
 	export _BM_DELETE_ALLOWED=${_BM_DELETE_ALLOWED:=true}
 
 	# _BM_DELETE_TO_FILE : Allow or disallow the deleted URLs to be copied in the Trash (true or false)
 	export _BM_DELETE_TO_FILE=${_BM_DELETE_TO_FILE:=true}
 
-	# _BM_DELETE_FILE : Where to find the deleted URLs
-	export _BM_DELETE_FILE="${_BM_DELETE_FILE:=${__w}.bm.trash}"
-
-	# _BM_DUPS_DETECT : Look for duplicates URL before insert in bookmark file
+	# _BM_DUPS_DETECT : Look for duplicates URL before insert in bookmark file (ovverided by -F)
 	export _BM_DUPS_DETECT=${_BM_DUPS_DETECT:=true}
 
 	# _BM_ASK_BEFORE_OPEN : When using bm with a URL (or search term) ask before opening the browser if more than one answer
@@ -42,9 +54,6 @@ config() {
 
 	# _BM_WAIT_SCREENSHOT : When taking a screenshot wait for the action to finish
 	export _BM_WAIT_SCREENSHOT=${_BM_WAIT_SCREENSHOT:=false}
-
-	# _BM_HTML_FILE : Location of generated HTML file
-	export _BM_HTML_FILE="${_BM_HTML_FILE:=${__w}bm.html}"
 
 	# _BM_OPEN_FIRST : When using open, the first link found is open
 	#              Also work with the copy to clipboard function
@@ -78,7 +87,7 @@ config() {
 	# _BM_PRINT_SCHEME : If set to no, bm will remove scheme from URL printing
 	export _BM_PRINT_SCHEME=${_BM_PRINT_SCHEME:=true}
 
-	# _BM_SEARCH_IGNORECASE : Ignore case if set when searching
+	# _BM_SEARCH_IGNORECASE : Ignore case if set when searching (overrided by -i)
 	export _BM_SEARCH_IGNORECASE=${_BM_SEARCH_IGNORECASE:=false}
 }
 
@@ -231,6 +240,16 @@ getAccelMax() {
 	' "${_BM_BOOKMARK_FILE}"
 }
 
+backupBm() {
+set -xv
+	if [ ${_BM_BOOKMARK_BACKUP} = true ]; then
+		while [ ${count:=${_BM_BOOKMARK_BACKUP_VERSION}} -gt 0 ]; do
+		cp -- "${_BM_BOOKMARK_BACKUP_FILE}.$(( count-1 ))" "${_BM_BOOKMARK_BACKUP_FILE}.$(( count-- ))" 2>&1 >/dev/null
+		done
+		cp -- "${_BM_BOOKMARK_FILE}" "${_BM_BOOKMARK_BACKUP_FILE}.0"
+	fi
+set +xv
+}
 saveUrl() {
 	if [ "$(sed 's/^[[:space:]]*\(f\|ht\)tps*:\/\/.*$/totoz/' <<< "${__url}")" != 'totoz' ]; then
 		if [ ${__F:=0} -eq 0 ]; then
@@ -250,8 +269,10 @@ saveUrl() {
 		fi
 	fi
 	if [ ${_BM_GET_PAGE_TITLE} = true -a -z "${__T:=}" ]; then
-		__T="$( curl -ks "${__url}" 2>&1 | sed '/<title>/I!d;/<\/title>/I!d;s;^[[:space:]]*<title>\([^<]*\)<.*;\1;i' )"
+		__T="$( curl -ks "${__url}" 2>&1 | sed '/<title>/I!d;/<\/title>/I!d;s;^[[:space:]]*<title>\([^<]*\)<.*;\1;i' )" &
 	fi
+	backupBm
+	wait
 	[[ -z "${__T:=}" ]] && __T="$(slug <<< "${__url}")"	# If no title => slug the url
 	[[ -z "${__t:=}" ]] && __t='default'			# Default tag is default
 	[[ -z "${__A:=}" ]] && __A="$(getAccelMax)"
@@ -359,17 +380,17 @@ stats() {
 #set -xv
 	readarray -t lines < "${_BM_BOOKMARK_FILE}"
 	#local lines=${#lines[@]}
-	echo "Bookmarks	:	${#lines[@]}"
-	echo "Duplicate	:	$(awk -F'|' '{print $1}' "${_BM_BOOKMARK_FILE}" |sort |uniq -d |wc -l)"
+	echo "# of Bookmarks	:	${#lines[@]}"
+	echo "# of Duplicate	:	$(awk -F'|' '{print $1}' "${_BM_BOOKMARK_FILE}" |sort |uniq -d |wc -l)"
 	local tags="$(awk -F'|' '{print $5}' "${_BM_BOOKMARK_FILE}" | sed -e 's/\([[:space:]]*,[[:space:]]*\)/\n/g')"
 
 	echo "# of tags	:	$( sort -u <<< "${tags,,}" |wc -l)"
-	echo "Top 10 tags :"
+	echo "Top 28 tags	:"
 	local nli=0;local pa=0
 #set -xv
-	sort <<< "${tags,,}" | uniq -c | while read n t; do
-		(( nli++ ));[[ ${nli} -gt 5 ]] && nli=0 && echo ''
-		(( pa++ ));[[ ${pa} -gt 10 ]] && break
+	sort <<< "${tags,,}" | uniq -c | sort -nr | while read n t; do
+		(( nli++ ));[[ ${nli} -gt 7 ]] && nli=0 && echo ''
+		(( pa++ ));[[ ${pa} -gt 28 ]] && break
 		echo -n "${t}:${n} "
 	done #| column -t
 set +xv
@@ -628,6 +649,7 @@ defineColors() {
 	export BOLD="\e[1m";		export BOLD_RESET="\e[21m"
 	export DIM="\e[2m";		export DIM_RESET="\e[22m"	
 	export UNDERLINE="\e[4m";	export UNDERLINE_RESET="\e[24m"
+	export INVERT="\e[7m";		export INVERT_RESET="\e[27m"
 	if [ ! -z "${1:-}" ]; then
 		echo "Use the following colors to fit your needs :"
 		(
@@ -641,7 +663,7 @@ defineColors() {
 		echo -e "${RESET}${GRAY}GRAY${RESET} - ${GRAY_LIGHT}GRAY_LIGHT${RESET} - ${BOLD}${GRAY}BOLD GRAY${RESET} - ${DIM}${GRAY}DIM GRAY${RESET}"
 		echo -e "${RESET}${GRAY_DARK}GRAY_DARK${RESET} - ${WHITE}WHITE${RESET}"
 		) | column -t
-		echo -e "You could also use the ${UNDERLINE}UNDERLINE and the ${RESET}RESET variable."
+		echo -e "You could also use the ${UNDERLINE}UNDERLINE, the ${INVERT}INVERT  and the ${RESET}RESET variable. INVERT_RESET and UNDERLINE_RESET also available"
 		exit 0
 	fi
 }
