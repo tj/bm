@@ -123,7 +123,7 @@ slug() {
 
 # version
 
-VERSION="0.5.0-$Id$"
+VERSION="0.5.0-$Format:%h$"
 
 # bookmarks dir
 
@@ -824,3 +824,4 @@ fi
 [[ ${__S} -eq 1 ]] && { stats ; exit; }
 [[ ${__C:=0} -eq 1 ]] && { defineColors 1 ; exit ; }
 
+# $Format:%cn @ %cD$ : $Id$
