@@ -57,7 +57,11 @@ config() {
 
 	# _BM_OPEN_FIRST : When using open, the first link found is open
 	#              Also work with the copy to clipboard function
-	export _BM_OPEN_FIRST="${_BM_OPEN_FIRST:=${__y:=0}}"
+	export _BM_OPEN_FIRST=${_BM_OPEN_FIRST:=false}
+
+	# _BM_OPEN_ALL : When using open, if more than one result, all are open (with the same function)
+	#              Also work with the copy to clipboard function (overrided by -Y)
+	export _BM_OPEN_ALL=${_BM_OPEN_ALL:=false}
 
 	# _BM_NO_ARGS_FORCE_HELP : If no args given to script sends to help instead of list all link
 	export _BM_NO_ARGS_FORCE_HELP=${_BM_NO_ARGS_FORCE_HELP:=false}
@@ -170,11 +174,19 @@ Usage: ${0} [modifier(s)] command [option(s)]
 				/string	Search in URL list
 				string	Search in full test
 
+	-o 'object'	Search for bookmarks and open it (use the same argument as for -s)
+			Options for -o
+			-i		Incensitive case search
+			-O		If more than one answer force the first bookmark to be open
+			-Y		If more than one answer force ALL bookmarks to be open
+
 	-d 'URL' or	Delete the URL from bookmark file
 	   md5sum or
 	   'URL part'	Options for -d
 			-D		Delete first occurence only
 			-F		Force the bookmark to be deleted (even if duplicate)
+
+	-L		List all tags
 
 	-C		Print the color table (usefull for configuration)
 
@@ -340,8 +352,7 @@ list_bookmarks() {
 #
 # Search all bookmarks with <query>
 #
-
-search_bookmarks() {
+search() {
 	local _s=''
 	[[ -z "${1:-}" ]] && readLines < "${_BM_BOOKMARK_FILE}" && return
 	case "${1:0:1}" in
@@ -357,7 +368,14 @@ search_bookmarks() {
 			if (Ign == 1) { s=tolower("'"${1:${_ss}}"'"); } else { s="'"${1:${_ss}}"'"; }
 		}
 		(Ign == 0 && $'"${_s}"' ~ s) || (Ign ==1 && tolower($'"${_s}"') ~ s) {print $0;}
-	' "${_BM_BOOKMARK_FILE}" | readLines
+	' "${_BM_BOOKMARK_FILE}" 
+
+}
+search_bookmarks() {
+#set -xv
+	search "${@}" | readLines
+#	search "${@}" 
+#	readLines < <(search "${@}")
 }
 
 #
@@ -365,19 +383,30 @@ search_bookmarks() {
 #
 
 open_bookmark() {
-#	cat $BOOKMARKS \
-
-	cat "${_BM_BOOKMARK_FILE}" \
-	| grep $1 \
-	| cut -d '|' -f 2 \
-	| xargs "${_BM_CMD_OPEN}"
+	local _lines="$(search "${@}")"
+	if [ ${_BM_ASK_BEFORE_OPEN} = true -a ${__O:=0} -eq 0 -a ${__Y:=0} -eq 0 ]; then
+		if [ $(wc -l <<< "${_lines}") -gt 1 ]; then
+			read -p"More than one URL found. Open all ? [Y/N] : " -n1 _answer
+			[[ "${_answer,,}" != 'y' ]] && die "\nUse -O to force the first URL or refine your search"
+		fi
+	fi
+	local _all=''
+	while read _nl; do
+		readLines <<< "${_nl}"
+		if [ ${_BM_OPEN_ALL} = true -o ${__Y:=0} -eq 1 ]; then
+			_all="$(awk -F'|' '{print $3}' <<< "${_nl}") ${_all}"
+		else
+			"${_BM_CMD_OPEN}" "$(awk -F'|' '{print $3}' <<< "${_nl}")"
+			[[ ${_BM_OPEN_FIRST} = true || ${__O:=0} -eq 1 ]] && exit 0
+		fi
+	done <<< "$(echo -e "${_lines}")"
+	[[ ${_BM_OPEN_ALL} = true || ${__Y:=0} -eq 1 ]]	&& "${_BM_CMD_OPEN}" "${_all}"
 }
 
 #
 # Diplay some statistics about the bookmarks
 #
 stats() {
-#set -xv
 	readarray -t lines < "${_BM_BOOKMARK_FILE}"
 	#local lines=${#lines[@]}
 	echo "# of Bookmarks	:	${#lines[@]}"
@@ -385,25 +414,16 @@ stats() {
 	local tags="$(awk -F'|' '{print $5}' "${_BM_BOOKMARK_FILE}" | sed -e 's/\([[:space:]]*,[[:space:]]*\)/\n/g')"
 
 	echo "# of tags	:	$( sort -u <<< "${tags,,}" |wc -l)"
-	echo "Top 28 tags	:"
+	echo "Top 14 tags used	:"
 	local nli=0;local pa=0
-#set -xv
-	sort <<< "${tags,,}" | uniq -c | sort -nr | while read n t; do
-		(( nli++ ));[[ ${nli} -gt 7 ]] && nli=0 && echo ''
-		(( pa++ ));[[ ${pa} -gt 28 ]] && break
-		echo -n "${t}:${n} "
-	done #| column -t
-set +xv
-}
-show_statistics() {
-	local total_bookmarks=$(cat "${_BM_BOOKMARK_FILE}" | wc -l | sed 's/^ *//')
-	local total_tags=$(list_tags | wc -l | sed 's/^ *//')
-
-	echo
-	echo "    total bookmarks: $total_bookmarks"
-	echo "         total tags: $total_tags"
-	echo "        top 10 tags: `display_top_ten_tags`"
-	echo
+	(
+		sort <<< "${tags,,}" | uniq -c | sort -nr | while read n t; do
+			(( nli++ ));[[ ${nli} -gt 7 ]] && nli=1 && echo ''
+			(( pa++ ));[[ ${pa} -gt 14 ]] && break
+			echo -n "${t// / }:${n} "
+		done
+		echo ''
+	) | column -t -x -c 7
 }
 
 #
@@ -411,28 +431,16 @@ show_statistics() {
 #
 
 list_tags() {
-#	cat $BOOKMARKS \
-
-	cat "${_BM_BOOKMARK_FILE}" \
-	| cut -f4 -d '|' \
-	| tr " " "\n" \
-	| sort \
-	| uniq -c \
-	| sort -nr
+	local tags="$(awk -F'|' '{print $5}' "${_BM_BOOKMARK_FILE}" | sed -e 's/\([[:space:]]*,[[:space:]]*\)/\n/g')"
+	local nli=0
+	(
+		sort <<< "${tags,,}" | uniq -c | sort -nr | while read n t; do
+			(( nli++ ));[[ ${nli} -gt 7 ]] && nli=1 && echo ''
+			echo -n "${t// / }:${n} "
+		done
+		echo ''
+	) | column  -t -x -c 7
 }
-
-# 
-# Display the 10 most frequently used tags
-#
-
-display_top_ten_tags() {
-	echo
-	printf "%20s  %s\n" count tag
-	list_tags \
-	| head -10 \
-	| awk '{ printf("%20d  %s\n", $1, $2) }'
-}
-
 
 #
 # Stylesheet
@@ -667,31 +675,19 @@ defineColors() {
 		exit 0
 	fi
 }
-#tototo() {
-#	unset tabb
-#	declare -a tabb
-#	export tabb
-#	readarray -t tabb < <( sed -e 's;|;\n;g' )
-#}
-#echo "bd8b3eff7fa82a0382a3e7576c5363b6|:bm|https://github.com/Flyounet/bm/|bm a cool enhanced bookmark tool for your console|default,shell|$(date '+%FT%TZ')" | tototo
-#echo ${tabb[0]}
-#echo ${#tabb[@]}
-#echo ${tabb[2]}
-#exit
+
 ##############################################################################
 # MAIN
 ##############################################################################
-#set -xv
-# parse args
 
 ##################### TRANSITIONNAL ############################
 _regex='^(tags|ls|list|search|open|add|view|stats|statistics|clear|colors)$'
 if [[ ${1:-} =~ ${_regex} ]]; then
         case "$1" in
-                tags) list_tags ;;
+                tags) __L=1 ;;
                 ls|list) __l=1 ;;
                 search) __s=1; __search="${@:2}" ;;
-                open) open_bookmarks "${@:1}" ;;
+                open) open_bookmark "${@:2}" ;;
                 add) __a=1; __url="${1:-}"; __T="${2:-}"; __t="${3:-}"; __A="${4:-}"; saveUrl; exit ;;
                 view) view_bookmark_screenshots "${:1}"; exit ;;
 		stats|statistics) show_statistics; exit ;;
@@ -723,9 +719,9 @@ else
 # -g generate html file
 # -G use this file
 # -g -g generate 1 file per tags
-        # used      : Aa-bCc----F--gHh-i-----l------------SsTt--Vv-w----------------
-        # available : --B---DdEe-fG---I-JjKkL-MmNnOoPpQqRr----Uu--W-XxYyZz0123456789
-	while getopts ":a:A:b:c:s:t:T:w:CFghHilSvV" option; do
+        # used      : Aa-bCc----F--gHh-i----Ll----Oo------SsTt--Vv-w--Y-------------
+        # available : --B---DdEe-fG---I-JjKk--MmNn--PpQqRr----Uu--W-Xx-yZz0123456789
+	while getopts ":a:A:b:c:o:s:t:T:w:CFghHilLOSvVY" option; do
 		case ${option} in
 			a) __a=1; __url="${OPTARG}";;	# Add url to bookmark
 			A) __A="${OPTARG}";;	# AcceleratoR
@@ -737,12 +733,16 @@ else
 			H|h) usage; exit 0;;	# Help
 			i) __i=1;;		# Ignore case when searching
 			l) __l=1;;		# List all bookmarks
+			L) __L=1;;		# List all tags
+			o) __o=1; __open="${OPTARG}";;	# Open
+			O) __O=1;;		# Open First
 			s) __s=1; __search="${OPTARG}";;	# Search
 			S) __S=1;;		# Print Statistics
 			t) __t="${OPTARG}";;	# tags for a URL
 			T) __T="${OPTARG}";;	# Title for a URL
 			v|V) echo "${0} v${VERSION}"; exit 0;;
 			w) __w="${OPTARG}";;	# Working directory
+			Y) __Y=1;;		# Open All
 			:) echo "Missing argument for '-${OPTARG}'" >&2 ; exit 1 ;;
 			?) echo "Argument unknown '-${OPTARG}'" >&2 ; exit 1 ;; # usage;;
 			*) echo "Argument unknown '-${option}'" >&2 ; exit 1 ;; # usage;;
@@ -776,8 +776,13 @@ fi
 [[ ${#} -eq 0 && ${_BM_NO_ARGS_FORCE_HELP:=0} -eq 0 ]] && __l=1
 
 # Only one action at a time
-if [ $(( ${__a:=0} + ${__C:=0} + ${__d:=0} + ${__g:=0} + ${__l:=0} + ${__o:=0} + ${__x:=0} + ${__s:=0} + ${__S:=0} )) -gt 1 ]; then
-        echo "You have to choose between -a, -C, -d, -g, -l, -o, -s, -S, -x" >&2
+if [ $(( ${__a:=0} + ${__C:=0} + ${__d:=0} + ${__g:=0} + ${__l:=0} + ${__L:=0} + ${__o:=0} + ${__x:=0} + ${__s:=0} + ${__S:=0} )) -gt 1 ]; then
+        echo "You have to choose between -a, -C, -d, -g, -l, -L, -o, -s, -S, -x" >&2
+        echo "Use -h for help" >&2
+	exit 0
+fi
+if [ $(( ${__O:=0} + ${__Y:=0} )) -gt 1 ]; then
+        echo "You have to choose between -O, -Y" >&2
         echo "Use -h for help" >&2
 	exit 0
 fi
@@ -785,7 +790,9 @@ fi
 # Executing actions
 [[ ${__a} -eq 1 ]] && { saveUrl ;  exit ; }
 [[ ${__s} -eq 1 ]] && { search_bookmarks "${__search}" ; exit; }
-[[ ${__l} -eq 1 ]] && { search_bookmarks ; exit; }
+[[ ${__l} -eq 1 ]] && { search ; exit; }
+[[ ${__L} -eq 1 ]] && { list_tags ; exit; }
+[[ ${__o} -eq 1 ]] && { open_bookmark "${__open}" ; exit; }
 [[ ${__S} -eq 1 ]] && { stats ; exit; }
 [[ ${__C:=0} -eq 1 ]] && { defineColors 1 ; exit ; }
 
