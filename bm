@@ -78,11 +78,13 @@ config() {
 		export _BM_CMD_OPEN='xdg-open'
 		export _BM_CMD_CAPTURE='cutycapt'
 		export _BM_CMD_MD5='md5sum'
+		export _BM_CMD_COPY='xsel'
 	else
 		# To keep commpatibility with the Mac (even i don't have any)
 		export _BM_CMD_OPEN='open'
 		export _BM_CMD_CAPTURE='webkit2png'
 		export _BM_CMD_MD5='md5'
+		export _BM_CMD_COPY='xsel'
 	fi
 
 	# _BM_PRINT_LINE : This line is used to print datas
@@ -403,6 +405,29 @@ open_bookmark() {
 	[[ ${_BM_OPEN_ALL} = true || ${__Y:=0} -eq 1 ]]	&& "${_BM_CMD_OPEN}" "${_all}"
 }
 
+copy_bookmark() {
+	local _lines="$(search "${@}")"
+	if [ ${_BM_ASK_BEFORE_OPEN} = true -a ${__X:=0} -eq 0 -a ${__Y:=0} -eq 0 ]; then
+		if [ $(wc -l <<< "${_lines}") -gt 1 ]; then
+			read -p"More than one URL found. Copy all ? [Y/N] : " -n1 _answer
+			[[ "${_answer,,}" != 'y' ]] && die "\nUse -X to force the first URL or refine your search"
+		fi
+	fi
+	local _all=''
+	while read _nl; do
+		readLines <<< "${_nl}"
+		if [ ${_BM_OPEN_ALL} = true -o ${__Y:=0} -eq 1 ]; then
+			_all="$(awk -F'|' '{print $3}' <<< "${_nl}") ${_all}"
+		else
+			awk -F'|' '{print $3}' <<< "${_nl}" | "${_BM_CMD_COPY}"
+			awk -F'|' '{print $3}' <<< "${_nl}" | "${_BM_CMD_COPY}" -b
+			[[ ${_BM_OPEN_FIRST} = true || ${__X:=0} -eq 1 ]] && exit 0
+		fi
+	done <<< "$(echo -e "${_lines}")"
+	[[ ${_BM_OPEN_ALL} = true || ${__Y:=0} -eq 1 ]]	&& "${_BM_CMD_COPY}" <<< "${_all}"
+	[[ ${_BM_OPEN_ALL} = true || ${__Y:=0} -eq 1 ]]	&& "${_BM_CMD_COPY}" -b <<< "${_all}"
+}
+
 #
 # Diplay some statistics about the bookmarks
 #
@@ -721,7 +746,7 @@ else
 # -g -g generate 1 file per tags
         # used      : Aa-bCc----F--gHh-i----Ll----Oo------SsTt--Vv-w--Y-------------
         # available : --B---DdEe-fG---I-JjKk--MmNn--PpQqRr----Uu--W-Xx-yZz0123456789
-	while getopts ":a:A:b:c:o:s:t:T:w:CFghHilLOSvVY" option; do
+	while getopts ":a:A:b:c:o:s:t:T:w:x:CFghHilLOSvVXY" option; do
 		case ${option} in
 			a) __a=1; __url="${OPTARG}";;	# Add url to bookmark
 			A) __A="${OPTARG}";;	# AcceleratoR
@@ -742,7 +767,9 @@ else
 			T) __T="${OPTARG}";;	# Title for a URL
 			v|V) echo "${0} v${VERSION}"; exit 0;;
 			w) __w="${OPTARG}";;	# Working directory
-			Y) __Y=1;;		# Open All
+			x) __x=1; __copy="${OPTARG}";;	# Copy
+			X) __X=1;;		# Copy First
+			Y) __Y=1;;		# Open/copy All
 			:) echo "Missing argument for '-${OPTARG}'" >&2 ; exit 1 ;;
 			?) echo "Argument unknown '-${OPTARG}'" >&2 ; exit 1 ;; # usage;;
 			*) echo "Argument unknown '-${option}'" >&2 ; exit 1 ;; # usage;;
@@ -781,8 +808,8 @@ if [ $(( ${__a:=0} + ${__C:=0} + ${__d:=0} + ${__g:=0} + ${__l:=0} + ${__L:=0} +
         echo "Use -h for help" >&2
 	exit 0
 fi
-if [ $(( ${__O:=0} + ${__Y:=0} )) -gt 1 ]; then
-        echo "You have to choose between -O, -Y" >&2
+if [ $(( ${__O:=0} + ${__Y:=0} + ${__X:=0} )) -gt 1 ]; then
+        echo "You have to choose between -O, -X, -Y" >&2
         echo "Use -h for help" >&2
 	exit 0
 fi
@@ -793,6 +820,7 @@ fi
 [[ ${__l} -eq 1 ]] && { search ; exit; }
 [[ ${__L} -eq 1 ]] && { list_tags ; exit; }
 [[ ${__o} -eq 1 ]] && { open_bookmark "${__open}" ; exit; }
+[[ ${__x} -eq 1 ]] && { copy_bookmark "${__copy}" ; exit; }
 [[ ${__S} -eq 1 ]] && { stats ; exit; }
 [[ ${__C:=0} -eq 1 ]] && { defineColors 1 ; exit ; }
 
