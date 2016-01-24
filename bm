@@ -122,8 +122,8 @@ slug() {
 
 
 # version
-
-VERSION="0.5.0-$Format:%h$"
+RELEASE='$Format:%h$'
+VERSION='0.5.0'
 
 # bookmarks dir
 
@@ -765,7 +765,7 @@ else
 			S) __S=1;;		# Print Statistics
 			t) __t="${OPTARG}";;	# tags for a URL
 			T) __T="${OPTARG}";;	# Title for a URL
-			v|V) echo "${0} v${VERSION}"; exit 0;;
+			v|V) echo -n "${0} v${VERSION}"; [[ "${option}" = 'V' ]] && echo -n " [commit: ${RELEASE}]"; echo ''; exit 0;;
 			w) __w="${OPTARG}";;	# Working directory
 			x) __x=1; __copy="${OPTARG}";;	# Copy
 			X) __X=1;;		# Copy First
