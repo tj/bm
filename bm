@@ -4,9 +4,6 @@
 readonly _BM_DEFAULT_CONFIG_FILENAME="${_BM_DEFAULT_CONFIG_FILENAME:=bm.conf}"
 
 
-
-
-
 config() {
 	echo "Reading Configuration..." >&2
 	[[ "${__w:=$HOME}" != "${HOME}" ]] && echo "Working dir changed to ${__w}"
@@ -22,16 +19,28 @@ config() {
 	# _BM_BOOKMARK_FILE : Where is stored the bookmark file
 	export _BM_BOOKARK_FILE="${_BM_BOOKMARK_FILE:=${__w}bm.lnk}"
 
+	# _BM_BOOKMARK_BACKUP_FILE : Where is stored the backup of bookmark file
+	export _BM_BOOKARK_BACKUP_FILE="${_BM_BOOKMARK_BACKUP_FILE:=${__w}.bm.lnk.bck}"
+
+	# _BM_HTML_FILE : Location of generated HTML file
+	export _BM_HTML_FILE="${_BM_HTML_FILE:=${__w}bm.html}"
+
+	# _BM_DELETE_FILE : Where to find the deleted URLs
+	export _BM_DELETE_FILE="${_BM_DELETE_FILE:=${__w}.bm.trash}"
+
+	# _BM_BOOKMARK_BACKUP : Copy the bookmark file before each modification
+	export _BM_BOOKMARK_BACKUP=${_BM_BOOKMARK_BACKUP:=true}
+
+	# _BM_BOOKMARK_BACKUP_VERSION : How many copy to keep (0 for 1, 1 for 2, ...)
+	export _BM_BOOKMARK_BACKUP_VERSION=${_BM_BOOKMARK_BACKUP_VERSION:=2}
+
 	# _BM_DELETE_ALLOWED : Even with the force flag the delete function will not be allowed (true or false)
 	export _BM_DELETE_ALLOWED=${_BM_DELETE_ALLOWED:=true}
 
 	# _BM_DELETE_TO_FILE : Allow or disallow the deleted URLs to be copied in the Trash (true or false)
 	export _BM_DELETE_TO_FILE=${_BM_DELETE_TO_FILE:=true}
 
-	# _BM_DELETE_FILE : Where to find the deleted URLs
-	export _BM_DELETE_FILE="${_BM_DELETE_FILE:=${__w}.bm.trash}"
-
-	# _BM_DUPS_DETECT : Look for duplicates URL before insert in bookmark file
+	# _BM_DUPS_DETECT : Look for duplicates URL before insert in bookmark file (ovverided by -F)
 	export _BM_DUPS_DETECT=${_BM_DUPS_DETECT:=true}
 
 	# _BM_ASK_BEFORE_OPEN : When using bm with a URL (or search term) ask before opening the browser if more than one answer
@@ -46,12 +55,13 @@ config() {
 	# _BM_WAIT_SCREENSHOT : When taking a screenshot wait for the action to finish
 	export _BM_WAIT_SCREENSHOT=${_BM_WAIT_SCREENSHOT:=false}
 
-	# _BM_HTML_FILE : Location of generated HTML file
-	export _BM_HTML_FILE="${_BM_HTML_FILE:=${__w}bm.html}"
-
 	# _BM_OPEN_FIRST : When using open, the first link found is open
 	#              Also work with the copy to clipboard function
-	export _BM_OPEN_FIRST="${_BM_OPEN_FIRST:=${__y:=0}}"
+	export _BM_OPEN_FIRST=${_BM_OPEN_FIRST:=false}
+
+	# _BM_OPEN_ALL : When using open, if more than one result, all are open (with the same function)
+	#              Also work with the copy to clipboard function (overrided by -Y)
+	export _BM_OPEN_ALL=${_BM_OPEN_ALL:=false}
 
 	# _BM_NO_ARGS_FORCE_HELP : If no args given to script sends to help instead of list all link
 	export _BM_NO_ARGS_FORCE_HELP=${_BM_NO_ARGS_FORCE_HELP:=false}
@@ -68,18 +78,23 @@ config() {
 		export _BM_CMD_OPEN='xdg-open'
 		export _BM_CMD_CAPTURE='cutycapt'
 		export _BM_CMD_MD5='md5sum'
+		export _BM_CMD_COPY='xsel'
 	else
 		# To keep commpatibility with the Mac (even i don't have any)
 		export _BM_CMD_OPEN='open'
 		export _BM_CMD_CAPTURE='webkit2png'
 		export _BM_CMD_MD5='md5'
+		export _BM_CMD_COPY='xsel'
 	fi
 
 	# _BM_PRINT_LINE : This line is used to print datas
-	export _BM_PRINT_LINE="${_BM_PRINT_LINE:=${UNDERLINE}${GRAY_LIGHT}BM_URL${RESET} --> ${RESET}BM_TITLE ${GRAY_DARK}[BM_TAGS]\n${BOLD}${GRAY}BM_ACCEL ${GRAY_DARK}(BM_MD5)${RESET}}"
+	export _BM_PRINT_LINE="${_BM_PRINT_LINE:=${UNDERLINE}${GRAY_LIGHT}BM_URL${RESET} --> ${RESET}BM_TITLE ${GRAY_DARK}[BM_TAGS]\n${BOLD}${GRAY}BM_ACCEL ${GRAY_DARK}(BM_MD5)${RESET} - ${GRAY_DARK}Added: BM_DATE${RESET}}"
 
 	# _BM_PRINT_SCHEME : If set to no, bm will remove scheme from URL printing
 	export _BM_PRINT_SCHEME=${_BM_PRINT_SCHEME:=true}
+
+	# _BM_SEARCH_IGNORECASE : Ignore case if set when searching (overrided by -i)
+	export _BM_SEARCH_IGNORECASE=${_BM_SEARCH_IGNORECASE:=false}
 }
 
 
@@ -107,8 +122,8 @@ slug() {
 
 
 # version
-
-VERSION="0.4.1-Flyou"
+RELEASE='$Format:%h$'
+VERSION='0.5.0'
 
 # bookmarks dir
 
@@ -133,47 +148,12 @@ HTML=/tmp/bm.html
 usage() {
   cat <<EOF
 
-  Usage: bm [options] [cmd]
-
-  Commands:
-
-    # add a bookmark with the given url, description, and optional tags
-    $ bm add <url> [desc] [tag...]
-
-    # open the first bookmark matching <query>
-    $ bm open <query>
-    $ bm <query>
-
-    # search the bookmarks via full-text <query>
-    $ bm search <query>
-
-    # list tags
-    $ bm tags
-
-    # list bookmarks available
-    $ bm list
-    $ bm ls
-    $ bm
-
-    # display statistics about the bookmarks
-    $ bm statistics
-    $ bm stats
-
-    # view bookmark screenshots in your default browser
-    $ bm view design
-    $ bm view
-
-    # clear all bookmarks
-    $ bm clear
-
-  Options:
-
-     -V, --version   output bm version
-     -h, --help      output this help information
-
-Usage: ${0} command [option(s)]
+Usage: ${0} [modifier(s)] command [option(s)]
 
 	Commands :
+	==========
+	-h/-H		Print this help
+	-v/-V		Print the version
 	-a 'URL'	Add the URL to bookmark file
 			Options for -a
 			-t "TagList"	Tags are sparated by a comma ,
@@ -181,13 +161,139 @@ Usage: ${0} command [option(s)]
 					downloaded)
 			-A "accel"	Accelerator when search for URLs (start with Accel)
 					Default is FQDN without gTld (and www, and sheme)
+			-F		Force the bookmark to be created (even if duplicate
+					or invalid)
+	
+	-l		List all URLs (default action, same thing as calling bm without args)
+
+	-s 'object'	Search for bookmarks
+			Options for -s
+			-i		Incensitive case search
+			Objects are
+				:string	Search in accelerator list
+				+string	Search in tags list
+				=string	Search in MD5 list
+				/string	Search in URL list
+				string	Search in full test
+
+	-o 'object'	Search for bookmarks and open it (use the same argument as for -s)
+			Options for -o
+			-i		Incensitive case search
+			-O		If more than one answer force the first bookmark to be open
+			-Y		If more than one answer force ALL bookmarks to be open
 
 	-d 'URL' or	Delete the URL from bookmark file
 	   md5sum or
-	   'part of the URL'
+	   'URL part'	Options for -d
+			-D		Delete first occurence only
+			-F		Force the bookmark to be deleted (even if duplicate)
+
+	-L		List all tags
+
+	-C		Print the color table (usefull for configuration)
+
+	-S		Show statistics about bookmarks/tags
+
+	Modifiers :
+	===========
+	-c 'file'	Use this configuration file instead of the default one
+
+	-b 'file'	Use this bookmark file instead of the default one
+
+
+
+	Old Legacy usage still available :
+	Usage: bm [options] [cmd]
+
+	Commands:
+
+	# add a bookmark with the given url, description, and optional tags
+	$ bm add <url> [desc] [tag...] [accelerator]
+
+	# open the first bookmark matching <query>
+	$ bm open <query>
+	$ bm <query>
+
+	# search the bookmarks via full-text <query>
+	$ bm search <query>
+
+	# list tags
+	$ bm tags
+
+	# list bookmarks available
+	$ bm list
+	$ bm ls
+	$ bm
+
+	# display statistics about the bookmarks
+	$ bm statistics
+	$ bm stats
+
+	# view bookmark screenshots in your default browser
+	$ bm view design
+	$ bm view
+
+	# clear all bookmarks
+	$ bm clear
+
+	Options:
+
+	-V, --version   output bm version
+	-h, --help      output this help information
 
 
 EOF
+}
+
+getAccelMax() {
+#		$2 ~ /^[[:SPACE:]]*:[[:SPACE:]]*[0-9][[:SPACE:]]*+$/ { n=gensub(/:([0-9])+/, "\\1", "g", $2); if (n>m) m=n; }
+	awk -F'|' '
+		BEGIN { m=0; }
+		$2 ~ /^[:space:]*:[:space:]*[0-9]+[:space:]*$/ { sub(/:+/, "", $2); if ($2>m) m=$2; }
+		END { print m+1; }
+	' "${_BM_BOOKMARK_FILE}"
+}
+
+backupBm() {
+set -xv
+	if [ ${_BM_BOOKMARK_BACKUP} = true ]; then
+		while [ ${count:=${_BM_BOOKMARK_BACKUP_VERSION}} -gt 0 ]; do
+		cp -- "${_BM_BOOKMARK_BACKUP_FILE}.$(( count-1 ))" "${_BM_BOOKMARK_BACKUP_FILE}.$(( count-- ))" 2>&1 >/dev/null
+		done
+		cp -- "${_BM_BOOKMARK_FILE}" "${_BM_BOOKMARK_BACKUP_FILE}.0"
+	fi
+set +xv
+}
+saveUrl() {
+	if [ "$(sed 's/^[[:space:]]*\(f\|ht\)tps*:\/\/.*$/totoz/' <<< "${__url}")" != 'totoz' ]; then
+		if [ ${__F:=0} -eq 0 ]; then
+			die "Your URL seems invalid '${__url}'. Use -F to force."
+		else
+			echo "Force adding invalid URL" >&2
+		fi
+	fi
+	local _sum="$(${_BM_CMD_MD5} <<< "${__url}")"
+	if [ ${_BM_DUPS_DETECT} = true ]; then
+		if [ ! -z "$(awk -F '|' '$1 ~ /'"${_sum%% *}"'/' "${_BM_BOOKMARK_FILE}")" ]; then
+			if [ ${__F:=0} -eq 0 ]; then
+				die "URL is already in the Bookmark file"
+			else
+				echo "Force adding duplicate URL" >&2
+			fi
+		fi
+	fi
+	if [ ${_BM_GET_PAGE_TITLE} = true -a -z "${__T:=}" ]; then
+		__T="$( curl -ks "${__url}" 2>&1 | sed '/<title>/I!d;/<\/title>/I!d;s;^[[:space:]]*<title>\([^<]*\)<.*;\1;i' )" &
+	fi
+	backupBm
+	wait
+	[[ -z "${__T:=}" ]] && __T="$(slug <<< "${__url}")"	# If no title => slug the url
+	[[ -z "${__t:=}" ]] && __t='default'			# Default tag is default
+	[[ -z "${__A:=}" ]] && __A="$(getAccelMax)"
+	[[ "${__A:0:1}" != ':' ]] && __A=":${__A}"		# If no accel => Add a number
+	echo "${_sum%% *}|${__A}|${__url}|${__T}|${__t}|$(date '+%FT%TZ')" >> "${_BM_BOOKMARK_FILE}" || die "Insert aborted into '${_BM_BOOKMARK_FILE}' !"
+	echo "${__url} inserted into '${_BM_BOOKMARK_FILE}'"
+	search_bookmarks "${__A}"
 }
 
 #
@@ -195,7 +301,6 @@ EOF
 #
 #   <url> [description] [tag ...] 
 #
-
 save_bookmark() {
 	local url=$1
 	local _sum="$(${_BM_CMD_MD5} <<< "${url}")"
@@ -223,16 +328,17 @@ save_bookmark() {
 
 readLines() {
 	IFS='|'
-	while read m u T t; do
+	while read m a u T t d; do
 		_line="${_BM_PRINT_LINE}"
 		_line="${_line//BM_MD5/$m}"
-		if [ ! ${_BM_PRINT_SCHEME} ]; then
+		if [ ${_BM_PRINT_SCHEME} = false ]; then
 			u="$(sed 's/^[[:space:]]*\(f\|ht\)tps*:\/\///' <<< "${u}")"
 		fi
 		_line="${_line//BM_URL/$u}"
 		_line="${_line//BM_TITLE/$T}"
 		_line="${_line//BM_TAGS/$t}"
 		_line="${_line//BM_ACCEL/${a:=No-Accelerator}}"
+		_line="${_line//BM_DATE/${d}}"
 		echo -e "${_line}\n"
 	done
 }
@@ -248,34 +354,30 @@ list_bookmarks() {
 #
 # Search all bookmarks with <query>
 #
-
-search_bookmarks() {
+search() {
 	local _s=''
+	[[ -z "${1:-}" ]] && readLines < "${_BM_BOOKMARK_FILE}" && return
 	case "${1:0:1}" in
-		:) _s=2 ;; # Accelerator
-		+) _s=5 ;; # Tags
-		=) _s=1 ;; # MD5 part
-		/) _s=3 ;; # URL part
-		*) _s=0 ;; # full text search
+		:) _s=2; _ss=0 ;; # Accelerator
+		+) _s=5; _ss=1 ;; # Tags
+		=) _s=1; _ss=1 ;; # MD5 part
+		/) _s=3; _ss=1 ;; # URL part
+		*) _s=0; _ss=0 ;; # full text search
 	esac
-	awk -F'|' '
-		$'"${_s}"' ~ /'"${1:1}"'/
-	' "${_BM_BOOKMARK_FILE}" | readLines
-return
-	echo
-#	cat $BOOKMARKS \
+	[[ ${_BM_SEARCH_IGNORECASE} = true || ${__i:=0} -eq 1 ]] && local _ign=1
+	awk -F'|' -vIgn=${_ign:=0} '
+		BEGIN {
+			if (Ign == 1) { s=tolower("'"${1:${_ss}}"'"); } else { s="'"${1:${_ss}}"'"; }
+		}
+		(Ign == 0 && $'"${_s}"' ~ s) || (Ign ==1 && tolower($'"${_s}"') ~ s) {print $0;}
+	' "${_BM_BOOKMARK_FILE}" 
 
-	cat "${_BM_BOOKMARK_FILE}" \
-	| grep $1 \
-	| awk '
-		BEGIN { FS = "|" }
-		{
-		printf "  \033[36m%s\033[0m\n", $2
-		printf "  \033[33m%s\033[0m\n", $3
-		printf "  \033[90m%s\033[0m\n\n", $4
-	}' \
-	| sed 's/^[[:space:]]*\(f\|ht\)tps*:\/\///'
-	echo
+}
+search_bookmarks() {
+#set -xv
+	search "${@}" | readLines
+#	search "${@}" 
+#	readLines < <(search "${@}")
 }
 
 #
@@ -283,27 +385,70 @@ return
 #
 
 open_bookmark() {
-#	cat $BOOKMARKS \
+	local _lines="$(search "${@}")"
+	if [ ${_BM_ASK_BEFORE_OPEN} = true -a ${__O:=0} -eq 0 -a ${__Y:=0} -eq 0 ]; then
+		if [ $(wc -l <<< "${_lines}") -gt 1 ]; then
+			read -p"More than one URL found. Open all ? [Y/N] : " -n1 _answer
+			[[ "${_answer,,}" != 'y' ]] && die "\nUse -O to force the first URL or refine your search"
+		fi
+	fi
+	local _all=''
+	while read _nl; do
+		readLines <<< "${_nl}"
+		if [ ${_BM_OPEN_ALL} = true -o ${__Y:=0} -eq 1 ]; then
+			_all="$(awk -F'|' '{print $3}' <<< "${_nl}") ${_all}"
+		else
+			"${_BM_CMD_OPEN}" "$(awk -F'|' '{print $3}' <<< "${_nl}")"
+			[[ ${_BM_OPEN_FIRST} = true || ${__O:=0} -eq 1 ]] && exit 0
+		fi
+	done <<< "$(echo -e "${_lines}")"
+	[[ ${_BM_OPEN_ALL} = true || ${__Y:=0} -eq 1 ]]	&& "${_BM_CMD_OPEN}" "${_all}"
+}
 
-	cat "${_BM_BOOKMARK_FILE}" \
-	| grep $1 \
-	| cut -d '|' -f 2 \
-	| xargs "${_BM_CMD_OPEN}"
+copy_bookmark() {
+	local _lines="$(search "${@}")"
+	if [ ${_BM_ASK_BEFORE_OPEN} = true -a ${__X:=0} -eq 0 -a ${__Y:=0} -eq 0 ]; then
+		if [ $(wc -l <<< "${_lines}") -gt 1 ]; then
+			read -p"More than one URL found. Copy all ? [Y/N] : " -n1 _answer
+			[[ "${_answer,,}" != 'y' ]] && die "\nUse -X to force the first URL or refine your search"
+		fi
+	fi
+	local _all=''
+	while read _nl; do
+		readLines <<< "${_nl}"
+		if [ ${_BM_OPEN_ALL} = true -o ${__Y:=0} -eq 1 ]; then
+			_all="$(awk -F'|' '{print $3}' <<< "${_nl}") ${_all}"
+		else
+			awk -F'|' '{print $3}' <<< "${_nl}" | "${_BM_CMD_COPY}"
+			awk -F'|' '{print $3}' <<< "${_nl}" | "${_BM_CMD_COPY}" -b
+			[[ ${_BM_OPEN_FIRST} = true || ${__X:=0} -eq 1 ]] && exit 0
+		fi
+	done <<< "$(echo -e "${_lines}")"
+	[[ ${_BM_OPEN_ALL} = true || ${__Y:=0} -eq 1 ]]	&& "${_BM_CMD_COPY}" <<< "${_all}"
+	[[ ${_BM_OPEN_ALL} = true || ${__Y:=0} -eq 1 ]]	&& "${_BM_CMD_COPY}" -b <<< "${_all}"
 }
 
 #
 # Diplay some statistics about the bookmarks
 #
+stats() {
+	readarray -t lines < "${_BM_BOOKMARK_FILE}"
+	#local lines=${#lines[@]}
+	echo "# of Bookmarks	:	${#lines[@]}"
+	echo "# of Duplicate	:	$(awk -F'|' '{print $1}' "${_BM_BOOKMARK_FILE}" |sort |uniq -d |wc -l)"
+	local tags="$(awk -F'|' '{print $5}' "${_BM_BOOKMARK_FILE}" | sed -e 's/\([[:space:]]*,[[:space:]]*\)/\n/g')"
 
-show_statistics() {
-	local total_bookmarks=$(cat "${_BM_BOOKMARK_FILE}" | wc -l | sed 's/^ *//')
-	local total_tags=$(list_tags | wc -l | sed 's/^ *//')
-
-	echo
-	echo "    total bookmarks: $total_bookmarks"
-	echo "         total tags: $total_tags"
-	echo "        top 10 tags: `display_top_ten_tags`"
-	echo
+	echo "# of tags	:	$( sort -u <<< "${tags,,}" |wc -l)"
+	echo "Top 14 tags used	:"
+	local nli=0;local pa=0
+	(
+		sort <<< "${tags,,}" | uniq -c | sort -nr | while read n t; do
+			(( nli++ ));[[ ${nli} -gt 7 ]] && nli=1 && echo ''
+			(( pa++ ));[[ ${pa} -gt 14 ]] && break
+			echo -n "${t// / }:${n} "
+		done
+		echo ''
+	) | column -t -x -c 7
 }
 
 #
@@ -311,28 +456,16 @@ show_statistics() {
 #
 
 list_tags() {
-#	cat $BOOKMARKS \
-
-	cat "${_BM_BOOKMARK_FILE}" \
-	| cut -f4 -d '|' \
-	| tr " " "\n" \
-	| sort \
-	| uniq -c \
-	| sort -nr
+	local tags="$(awk -F'|' '{print $5}' "${_BM_BOOKMARK_FILE}" | sed -e 's/\([[:space:]]*,[[:space:]]*\)/\n/g')"
+	local nli=0
+	(
+		sort <<< "${tags,,}" | uniq -c | sort -nr | while read n t; do
+			(( nli++ ));[[ ${nli} -gt 7 ]] && nli=1 && echo ''
+			echo -n "${t// / }:${n} "
+		done
+		echo ''
+	) | column  -t -x -c 7
 }
-
-# 
-# Display the 10 most frequently used tags
-#
-
-display_top_ten_tags() {
-	echo
-	printf "%20s  %s\n" count tag
-	list_tags \
-	| head -10 \
-	| awk '{ printf("%20d  %s\n", $1, $2) }'
-}
-
 
 #
 # Stylesheet
@@ -508,7 +641,7 @@ checkBinaries() {
 	if [ ${#} -ne 0 ]; then
 		local cmdErr="${@}"
 	else
-		local cmdErr="sed awk date iconv head cat ${_BM_CMD_OPEN} ${_BM_CMD_MD5}"
+		local cmdErr="sed awk date iconv head cat curl ${_BM_CMD_OPEN} ${_BM_CMD_MD5} column"
 	fi
 	set ${cmdErr}
 	while [ ${#} -ne 0 ]; do
@@ -549,6 +682,7 @@ defineColors() {
 	export BOLD="\e[1m";		export BOLD_RESET="\e[21m"
 	export DIM="\e[2m";		export DIM_RESET="\e[22m"	
 	export UNDERLINE="\e[4m";	export UNDERLINE_RESET="\e[24m"
+	export INVERT="\e[7m";		export INVERT_RESET="\e[27m"
 	if [ ! -z "${1:-}" ]; then
 		echo "Use the following colors to fit your needs :"
 		(
@@ -562,71 +696,31 @@ defineColors() {
 		echo -e "${RESET}${GRAY}GRAY${RESET} - ${GRAY_LIGHT}GRAY_LIGHT${RESET} - ${BOLD}${GRAY}BOLD GRAY${RESET} - ${DIM}${GRAY}DIM GRAY${RESET}"
 		echo -e "${RESET}${GRAY_DARK}GRAY_DARK${RESET} - ${WHITE}WHITE${RESET}"
 		) | column -t
-		echo -e "You could also use the ${UNDERLINE}UNDERLINE and the ${RESET}RESET variable."
+		echo -e "You could also use the ${UNDERLINE}UNDERLINE, the ${INVERT}INVERT  and the ${RESET}RESET variable. INVERT_RESET and UNDERLINE_RESET also available"
 		exit 0
 	fi
 }
 
-
 ##############################################################################
 # MAIN
 ##############################################################################
-#set -xv
-checkBinaries
-
-# defineColors MUST be called before the config() or _BM_PRINT_LINE will be in trouble.
-defineColors
-# Until arguments are not checked, the config is called before
-config "${__c}"
-[[ ${_BM_CMD_CAPTURE_CHECK} ]] && checkBinaries "${_BM_CMD_CAPTURE}"
-
-
-##############################################################################
-
-if [ ! -f "${_BM_BOOKMARK_FILE}" -a ${_BM_CREATE_BOOKMARK_FILE} ]; then
-	echo "bd8b3eff7fa82a0382a3e7576c5363b6|https://github.com/Flyounet/bm/|bm a cool enhanced bookmark tool for your console|default,shell" >> "${_BM_BOOKMARK_FILE}"
-	echo "2981b5cae113491ddb18e0d51454f0d9|https://github.com/tj/bm/|The original bm : a cool bookmark tool for your console|default,shell" >> "${_BM_BOOKMARK_FILE}"
-fi
-
-[[ ${#} -eq 0 && ${_BM_NO_ARGS_FORCE_HELP:=0} -eq 0 ]] && list_bookmarks && exit 0
-# parse args
-
-while test $# -ne 0; do
-  arg=$1; shift
-  case $arg in
-    -V|--version) echo $VERSION; exit ;;
-    -h|--help) usage; exit ;;
-    tags) list_tags; exit ;;
-    ls|list) list_bookmarks; exit ;;
-    search) search_bookmarks "$@"; exit ;;
-    open) open_bookmark "$@"; exit ;;
-    add) save_bookmark "$@"; exit ;;
-    view) view_bookmark_screenshots "$@"; exit ;;
-    stats|statistics) show_statistics; exit ;;
-    clear) clear_bookmarks; exit ;;
-    colors) defineColors 1; exit ;;
--g) echo "g";;
-    *) open_bookmark $arg; exit ;;
-  esac
-done
-
-#exit 0
 
 ##################### TRANSITIONNAL ############################
-
-_regex='^(tags|ls|list|searxh|open|add|view|stats|statistics|clear)$'
+_regex='^(tags|ls|list|search|open|add|view|stats|statistics|clear|colors)$'
 if [[ ${1:-} =~ ${_regex} ]]; then
         case "$1" in
-                bake) __b=1 ;;
-                post) __p=1; __post="${@:2}" ;;
-                list) __l=1;;
-                toggle) __t=1; __post="${@:2}" ;;
-                date) __d=1; __post="${@:2}" ;;
-                rename) __r=1; __post="${@:2}" ;;
-                *) usage ;;
+                tags) __L=1 ;;
+                ls|list) __l=1 ;;
+                search) __s=1; __search="${@:2}" ;;
+                open) open_bookmark "${@:2}" ;;
+                add) __a=1; __url="${1:-}"; __T="${2:-}"; __t="${3:-}"; __A="${4:-}"; saveUrl; exit ;;
+                view) view_bookmark_screenshots "${:1}"; exit ;;
+		stats|statistics) show_statistics; exit ;;
+		clear) clear_bookmarks; exit ;;
+		colors) __C=1;;
         esac
 else
-# -c config file
+#q -c config file
 # -C colors print ==> exit
 # -b bookmark file
 # -d delete
@@ -650,45 +744,84 @@ else
 # -g generate html file
 # -G use this file
 # -g -g generate 1 file per tags
-        # used      : -----c--------Hh--------------------------V------y------------
-        # available : AaBbC-DdEeFfGg--IiJjKkLlMmNnOoPpQqRrSsTtUu-vWwXxY-Zz0123456789
-        while getopts ":d:f:p:r:s:S:w:gbDhHlntxX" option; do
-                case ${option} in
-                        c) __c="${OPTARG}";;
-			g) (( __g++ ));;
-			y) __y=1;;
-			V) echo "${0} v${VERSION}"; exit 0;;
-                        ?|H|h) usage; exit 0;;
-                        *) echo "Argument unknown" >&2; usage;;
-
-
-
-
-                        b) __b=1;;
-                        d) __d=1;__post="${OPTARG}";;
-                        D) __D=1;;
-                        l) __l=1;;
-                        f) __f="${OPTARG}";;
-                        n) __n=1;;
-                        p) __p=1;__post="${OPTARG}";;
-                        r) __r=1;__post="${OPTARG}";;
-                        s) __s=1;__post="${OPTARG}";;
-                        S) [[ "${OPTARG,,}" =~ ^(user|all|none)$ ]] || die "Argument '${OPTARG}' unknown."; export PRINT_ALL_SUMMARY="${OPTARG,,}";;
-                        t) __t=1;;
-                        w) [[ -d "${OPTARG}" ]] && __w="$( cd ${OPTARG}; pwd)/";;
-                        x) __x=1;;
-                        X) __X=1;;
-                esac
-echo ${__g}
-        done
+        # used      : Aa-bCc----F--gHh-i----Ll----Oo------SsTt--Vv-w--Y-------------
+        # available : --B---DdEe-fG---I-JjKk--MmNn--PpQqRr----Uu--W-Xx-yZz0123456789
+	while getopts ":a:A:b:c:o:s:t:T:w:x:CFghHilLOSvVXY" option; do
+		case ${option} in
+			a) __a=1; __url="${OPTARG}";;	# Add url to bookmark
+			A) __A="${OPTARG}";;	# AcceleratoR
+			b) __b="${OPTARG}";;	# Bookmark file
+			c) __c="${OPTARG}";;	# Config file
+			C) __C=1;;		# Print color table
+			F) __F=1;;		# Force the add or delete
+			g) (( __g++ ));;	# generate html file(s)
+			H|h) usage; exit 0;;	# Help
+			i) __i=1;;		# Ignore case when searching
+			l) __l=1;;		# List all bookmarks
+			L) __L=1;;		# List all tags
+			o) __o=1; __open="${OPTARG}";;	# Open
+			O) __O=1;;		# Open First
+			s) __s=1; __search="${OPTARG}";;	# Search
+			S) __S=1;;		# Print Statistics
+			t) __t="${OPTARG}";;	# tags for a URL
+			T) __T="${OPTARG}";;	# Title for a URL
+			v|V) echo -n "${0} v${VERSION}"; [[ "${option}" = 'V' ]] && echo -n " [commit: ${RELEASE}]"; echo ''; exit 0;;
+			w) __w="${OPTARG}";;	# Working directory
+			x) __x=1; __copy="${OPTARG}";;	# Copy
+			X) __X=1;;		# Copy First
+			Y) __Y=1;;		# Open/copy All
+			:) echo "Missing argument for '-${OPTARG}'" >&2 ; exit 1 ;;
+			?) echo "Argument unknown '-${OPTARG}'" >&2 ; exit 1 ;; # usage;;
+			*) echo "Argument unknown '-${option}'" >&2 ; exit 1 ;; # usage;;
+		esac
+	done
 fi
-echo ${__g}
-exit
+
+# Parsing args is done, Starting to work, so check if binaries are here
+checkBinaries
+
+# defineColors MUST be called before the config() or _BM_PRINT_LINE will be in trouble.
+defineColors
+# Before loading config, checking if working dir exist...
+if [ ! -z "${__w:=}" -a ! -d "${__w}" ]; then
+	die "Working directory '${__w}' doesn't exist !" >&2
+fi
+# Loading config
 config "${__c}"
 
-# Il doit y avoir un default tag
+# Following config, we maybe not have to check the capture tool
+[[ ${_BM_CMD_CAPTURE_CHECK} ]] && checkBinaries "${_BM_CMD_CAPTURE}"
 
-# Header :
-# + counter URLs open
-# + counter URLs copied
-# + counter URLs deleted
+# If no bookmark file exist, create one if allowed
+if [ ! -f "${_BM_BOOKMARK_FILE}" -a ${_BM_CREATE_BOOKMARK_FILE} = true ]; then
+	# Remember fields : 1=md5, 2=accel, 3=url, 4=title, 5=tags, 6=date of bookmark
+	echo "bd8b3eff7fa82a0382a3e7576c5363b6|:bm|https://github.com/Flyounet/bm/|bm a cool enhanced bookmark tool for your console|default,shell|$(date '+%FT%TZ')" >> "${_BM_BOOKMARK_FILE}"
+	echo "2981b5cae113491ddb18e0d51454f0d9|:bmtj|https://github.com/tj/bm/|The original bm : a cool bookmark tool for your console|default,shell|$(date '+%FT%TZ')" >> "${_BM_BOOKMARK_FILE}"
+fi
+
+# Starting to work with args. If none probably list...
+[[ ${#} -eq 0 && ${_BM_NO_ARGS_FORCE_HELP:=0} -eq 0 ]] && __l=1
+
+# Only one action at a time
+if [ $(( ${__a:=0} + ${__C:=0} + ${__d:=0} + ${__g:=0} + ${__l:=0} + ${__L:=0} + ${__o:=0} + ${__x:=0} + ${__s:=0} + ${__S:=0} )) -gt 1 ]; then
+        echo "You have to choose between -a, -C, -d, -g, -l, -L, -o, -s, -S, -x" >&2
+        echo "Use -h for help" >&2
+	exit 0
+fi
+if [ $(( ${__O:=0} + ${__Y:=0} + ${__X:=0} )) -gt 1 ]; then
+        echo "You have to choose between -O, -X, -Y" >&2
+        echo "Use -h for help" >&2
+	exit 0
+fi
+
+# Executing actions
+[[ ${__a} -eq 1 ]] && { saveUrl ;  exit ; }
+[[ ${__s} -eq 1 ]] && { search_bookmarks "${__search}" ; exit; }
+[[ ${__l} -eq 1 ]] && { search ; exit; }
+[[ ${__L} -eq 1 ]] && { list_tags ; exit; }
+[[ ${__o} -eq 1 ]] && { open_bookmark "${__open}" ; exit; }
+[[ ${__x} -eq 1 ]] && { copy_bookmark "${__copy}" ; exit; }
+[[ ${__S} -eq 1 ]] && { stats ; exit; }
+[[ ${__C:=0} -eq 1 ]] && { defineColors 1 ; exit ; }
+
+# $Format:%cn @ %cD$ : $Id$
