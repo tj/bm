@@ -5,7 +5,7 @@ readonly _BM_DEFAULT_CONFIG_FILENAME="${_BM_DEFAULT_CONFIG_FILENAME:=bm.conf}"
 
 
 config() {
-	echo "Reading Configuration..." >&2
+	#echo "Reading Configuration..." >&2
 	[[ "${__w:=$HOME}" != "${HOME}" ]] && echo "Working dir changed to ${__w}"
 	[[ "${__w: -1}" != '/' ]] && __w="${__w//\/\//\/}/"
 	# If a config file is given, we take it first, or look for a default config file
@@ -13,7 +13,7 @@ config() {
 		. "${1}"
 	elif [ ${__n:=0} -eq 0 -a -f "${__w}${_BM_DEFAULT_CONFIG_FILENAME}" ]; then
 		. "${__w}${_BM_DEFAULT_CONFIG_FILENAME}"
-		echo "Default config file loaded ${__w}${_BM_DEFAULT_CONFIG_FILENAME}"
+		#echo "Default config file loaded ${__w}${_BM_DEFAULT_CONFIG_FILENAME}"
 	fi
 
 	# _BM_BOOKMARK_FILE : Where is stored the bookmark file
@@ -77,12 +77,14 @@ config() {
 	if [ "$(uname -s)" = 'Linux' ]; then
 		export _BM_CMD_OPEN='xdg-open'
 		export _BM_CMD_CAPTURE='cutycapt'
+		export _BM_CMD_CAPTURE_ARGS='--url={URL} --output={FILE}.png'
 		export _BM_CMD_MD5='md5sum'
 		export _BM_CMD_COPY='xsel'
 	else
 		# To keep commpatibility with the Mac (even i don't have any)
 		export _BM_CMD_OPEN='open'
 		export _BM_CMD_CAPTURE='webkit2png'
+		export _BM_CMD_CAPTURE_ARGS='-C -o {FILE}.png {URL}'
 		export _BM_CMD_MD5='md5'
 		export _BM_CMD_COPY='xsel'
 	fi
@@ -125,17 +127,10 @@ slug() {
 RELEASE='$Format:%h$'
 VERSION='0.5.0'
 
-# bookmarks dir
-
-DIR=~/Dropbox
 
 # thumbs cache
 
 THUMBS=$DIR/bookmark-thumbs
-
-# bookmarks file
-
-BOOKMARKS=$DIR/bookmarks
 
 # HTML file
 
@@ -295,32 +290,6 @@ saveUrl() {
 }
 
 #
-# Add a bookmark
-#
-#   <url> [description] [tag ...] 
-#
-save_bookmark() {
-	local url=$1
-	local _sum="$(${_BM_CMD_MD5} <<< "${url}")"
-	local desc=$2
-	local tags=${@:3}
-	if [ ${_BM_DUPS_DETECT} ]; then
-		if [ ! -z "$(awk -F '|' '$1 ~ /'"${_sum%% *}"'/' "${_BM_BOOKMARK_FILE}")" ]; then
-			die "URL is already in the Bookmark file"
-		fi
-	fi
-	echo
-	echo "  Added bookmark"
-	echo
-	echo "    url: $url"
-	echo "    description: $desc"
-	echo "    tags: $tags"
-	echo
-	echo "${_sum%% *}|$url|$desc|$tags" >> "${_BM_BOOKMARK_FILE}"
-#	echo "${_sum%% *}|$url|$desc|$tags" >> $BOOKMARKS
-}
-
-#
 # manage each line to print it
 #
 
@@ -346,7 +315,7 @@ readLines() {
 #
 
 list_bookmarks() {
-	cat "${_BM_BOOKMARK_FILE}" |readLines
+	awk '$0 !~ /^[       ]*#/' "${_BM_BOOKMARK_FILE}" | readLines
 }
 
 #
@@ -354,8 +323,7 @@ list_bookmarks() {
 #
 search() {
 	local _s=''
-	[[ -z "${1:-}" ]] && awk '$0 !~ /^[       ]*#/' "${_BM_BOOKMARK_FILE}" | readLines && return
-#	[[ -z "${1:-}" ]] && readLines < "${_BM_BOOKMARK_FILE}" && return
+	[[ -z "${1:-}" ]] && list_bookmarks && return
 	case "${1:0:1}" in
 		:) _s=2; _ss=0 ;; # Accelerator
 		+) _s=5; _ss=1 ;; # Tags
@@ -427,7 +395,6 @@ copy_bookmark() {
 	[[ ${_BM_OPEN_ALL} = true || ${__Y:=0} -eq 1 ]]	&& "${_BM_CMD_COPY}" -b <<< "${_all}"
 }
 
-# et si on enlevait les commentaires ?
 delete_bookmark() {
 	[[ -z "${@//[ 	]/}" ]] && die "You MUST give an argument !"
 	local _lines="$(search "${@}")"
@@ -639,15 +606,6 @@ view_bookmark_screenshots() {
 }
 
 #
-# Remove all bookmarks
-#
-
-clear_bookmarks() {
-  rm $BOOKMARKS
-  rm -fr $THUMBS
-}
-
-#
 # die print message to stderr and exit
 #
 
@@ -768,8 +726,8 @@ else
 # -g generate html file
 # -G use this file
 # -g -g generate 1 file per tags
-        # used      : Aa-bCc----F--gHh-i----Ll----Oo------SsTt--Vv-w--Y-------------
-        # available : --B---DdEe-fG---I-JjKk--MmNn--PpQqRr----Uu--W-Xx-yZz0123456789
+        # used      : Aa-bCcDd--F--gHh-i----Ll----Oo------SsTt--Vv-w--Y-------------
+        # available : --B-----Ee-fG---I-JjKk--MmNn--PpQqRr----Uu--W-Xx-yZz0123456789
 	while getopts ":a:A:b:c:d:o:s:t:T:w:x:CDFghHilLOSvVXY" option; do
 		case ${option} in
 			a) __a=1; __url="${OPTARG}";;	# Add url to bookmark
