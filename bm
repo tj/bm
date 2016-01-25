@@ -255,14 +255,12 @@ getAccelMax() {
 }
 
 backupBm() {
-set -xv
 	if [ ${_BM_BOOKMARK_BACKUP} = true ]; then
 		while [ ${count:=${_BM_BOOKMARK_BACKUP_VERSION}} -gt 0 ]; do
 		cp -- "${_BM_BOOKMARK_BACKUP_FILE}.$(( count-1 ))" "${_BM_BOOKMARK_BACKUP_FILE}.$(( count-- ))" 2>&1 >/dev/null
 		done
 		cp -- "${_BM_BOOKMARK_FILE}" "${_BM_BOOKMARK_BACKUP_FILE}.0"
 	fi
-set +xv
 }
 saveUrl() {
 	if [ "$(sed 's/^[[:space:]]*\(f\|ht\)tps*:\/\/.*$/totoz/' <<< "${__url}")" != 'totoz' ]; then
@@ -426,6 +424,31 @@ copy_bookmark() {
 	done <<< "$(echo -e "${_lines}")"
 	[[ ${_BM_OPEN_ALL} = true || ${__Y:=0} -eq 1 ]]	&& "${_BM_CMD_COPY}" <<< "${_all}"
 	[[ ${_BM_OPEN_ALL} = true || ${__Y:=0} -eq 1 ]]	&& "${_BM_CMD_COPY}" -b <<< "${_all}"
+}
+
+# et si on enlevait les commentaires ?
+delete_bookmark() {
+	[[ -z "${@//[ 	]/}" ]] && die "You MUST give an argument !"
+	local _lines="$(search "${@}")"
+	if [ ${_BM_DELETE_ALLOWED} = true  ]; then
+		if [ ${_BM_ASK_BEFORE_OPEN} = true -a ${__D:=0} -eq 0 -a ${__Y:=0} -eq 0 ]; then
+			if [ $(wc -l <<< "${_lines}") -ge 1 ]; then
+				read -p"You're about to delete entry(ies). Ready ? [Y/N] : " -n1 _answer
+				[[ "${_answer,,}" != 'y' ]] && die "\nUse -D to force the backup if not configured."
+			fi
+		fi
+		backupBm
+		local _all=''
+		while read _nl; do
+			readLines <<< "${_nl}"
+			if [ ${_BM_DELETE_TO_FILE} = true -o ${__D:=0} -eq 1 ]; then
+				echo "${_nl}" >> "${_BM_DELETE_FILE}"
+			fi
+			sed -i -e '/'"${_nl//\//\\/}"'/d' "${_BM_BOOKMARK_FILE}"
+		done <<< "$(echo -e "${_lines}")"
+	else
+		die "You're not allowed to delete entries. Change the _BM_DELETE_ALLOWED to true !"
+	fi
 }
 
 #
@@ -746,13 +769,15 @@ else
 # -g -g generate 1 file per tags
         # used      : Aa-bCc----F--gHh-i----Ll----Oo------SsTt--Vv-w--Y-------------
         # available : --B---DdEe-fG---I-JjKk--MmNn--PpQqRr----Uu--W-Xx-yZz0123456789
-	while getopts ":a:A:b:c:o:s:t:T:w:x:CFghHilLOSvVXY" option; do
+	while getopts ":a:A:b:c:d:o:s:t:T:w:x:CDFghHilLOSvVXY" option; do
 		case ${option} in
 			a) __a=1; __url="${OPTARG}";;	# Add url to bookmark
 			A) __A="${OPTARG}";;	# AcceleratoR
 			b) __b="${OPTARG}";;	# Bookmark file
 			c) __c="${OPTARG}";;	# Config file
 			C) __C=1;;		# Print color table
+			d) __d=1; __del="${OPTARG}";;	# Config file
+			D) __D=1;;		# Print color table
 			F) __F=1;;		# Force the add or delete
 			g) (( __g++ ));;	# generate html file(s)
 			H|h) usage; exit 0;;	# Help
@@ -816,6 +841,7 @@ fi
 
 # Executing actions
 [[ ${__a} -eq 1 ]] && { saveUrl ;  exit ; }
+[[ ${__d} -eq 1 ]] && { delete_bookmark "${__del}";  exit ; }
 [[ ${__s} -eq 1 ]] && { search_bookmarks "${__search}" ; exit; }
 [[ ${__l} -eq 1 ]] && { search ; exit; }
 [[ ${__L} -eq 1 ]] && { list_tags ; exit; }
