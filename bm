@@ -276,10 +276,9 @@ saveUrl() {
 		fi
 	fi
 	if [ ${_BM_GET_PAGE_TITLE} = true -a -z "${__T:=}" ]; then
-		__T="$( curl -ks "${__url}" 2>&1 | sed '/<title>/I!d;/<\/title>/I!d;s;^[[:space:]]*<title>\([^<]*\)<.*;\1;i' )" &
+		__T="$( curl -ks "${__url}" 2>&1 | sed '/<title>/I!d;/<\/title>/I!d;s;^[[:space:]]*<title>\([^<]*\)<.*;\1;i' )"
 	fi
 	backupBm
-	wait
 	[[ -z "${__T:=}" ]] && __T="$(slug <<< "${__url}")"	# If no title => slug the url
 	[[ -z "${__t:=}" ]] && __t='default'			# Default tag is default
 	[[ -z "${__A:=}" ]] && __A="$(getAccelMax)"
