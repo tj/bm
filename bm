@@ -436,12 +436,11 @@ delete_bookmark() {
 #
 stats() {
 	readarray -t lines < "${_BM_BOOKMARK_FILE}"
-	echo "# of Bookmarks	:	${#lines[@]}"
-	echo "# of Duplicate	:	$(awk -F'|' '$0 !~ /^[	 ]*#/ {print $1}' "${_BM_BOOKMARK_FILE}" |sort |uniq -d |wc -l)"
-	echo "# of Pictures	:	$(ls -1 "${_BM_SCREENSHOT_DIRECTORY}"/* |wc -l)"
+	echo "# of Bookmarks		: ${#lines[@]}"
+	echo "# of Duplicate		: $(awk -F'|' '$0 !~ /^[	 ]*#/ {print $1}' "${_BM_BOOKMARK_FILE}" |sort |uniq -d |wc -l)"
 	local tags="$(awk -F'|' '$0 !~ /^[ 	]*#/ {print $5}' "${_BM_BOOKMARK_FILE}" | sed -e 's/\([[:space:]]*,[[:space:]]*\)/\n/g')"
 
-	echo "# of tags	:	$( sort -u <<< "${tags,,}" |wc -l)"
+	echo "# of tags		: $( sort -u <<< "${tags,,}" |wc -l)"
 	echo "Top 14 tags used	:"
 	local nli=0;local pa=0
 	(
@@ -452,9 +451,12 @@ stats() {
 		done
 		echo ''
 	) | column -t -x -c 7
+	echo "# of Pictures		: $(ls -1 "${_BM_SCREENSHOT_DIRECTORY}"/* |wc -l)"
+	echo "All Pictures size	: $(du -sh "${_BM_SCREENSHOT_DIRECTORY}" | awk '{print $1}')"
 	local orphaned="$( cd "${_BM_SCREENSHOT_DIRECTORY}" && for i in *; do [[ -z "$(sed -e '/'"${i%%.*}"'/!d' "${_BM_BOOKMARK_FILE}")" ]] && ((orph++)); done; echo "${orph:=0}" )"
 	local nopics="$( while read i; do [[ ! -f "${_BM_SCREENSHOT_DIRECTORY}/${i%%|*}.png" ]] && ((nopics++)); done <<< ${lines[@]}; echo "${nopics:=0}" )"
-	[[ ${orphaned:=0} -ne 0 || ${nopics:=0} -ne 0 ]] && echo -e "About pictures...\nOrphaned pictures	: ${orphaned}\nBookmark Without Pic	: ${nopics}"
+	echo "Orphaned pictures	: ${orphaned}"
+	echo "Bookmark Without Pic	: ${nopics}"
 }
 
 #
