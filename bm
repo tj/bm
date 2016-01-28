@@ -499,6 +499,7 @@ style() {
      padding: 1px;
      opacity: 1;
      border: 15px solid black;
+     border-radius: 5px;
      -webkit-border-radius: 5px;
      -moz-border-radius: 5px;
      -webkit-transition: -webkit-box-shadow 600ms;
@@ -524,6 +525,9 @@ style() {
      width: 200px;
      height: 150px;
      opacity: .5;
+     border-radius: 5px;
+     -webkit-border-radius: 5px;
+     -moz-border-radius: 5px;
      -webkit-transition: opacity 200ms;
      -moz-transition: opacity 200ms;
    }
@@ -576,9 +580,21 @@ set +xv
 }
 
 picturize() {
-	awk '$0 !~ /^[  ]*#/ {print $1,$3;}' "${_BM_BOOKMARK_FILE}" | while read m u; do
+	awk -F'|' '$0 !~ /^[  ]*#/ {print $1,$3;}' "${_BM_BOOKMARK_FILE}" | while read m u; do
 		[[ ! -f "${_BM_SCREENSHOT_DIRECTORY}/${m}.png" || ${__F:=0} -eq 1 ]] && { screenshot_take "${_BM_SCREENSHOT_DIRECTORY}/${m}.png" "${u}" & }
 		[[ ${_BM_SCREENSHOT_WAIT} = true ]] && wait
+	done
+}
+
+bookmark_generator() {
+	echo "<title>bm</title>" > "${1:-${_BM_HTML_FILE}}"
+	style >> "${1:-${_BM_HTML_FILE}}"
+#	search "${2:-}" | while IFS='|' read m a u T t d; do
+	awk '$0 !~ /^[  ]*#/' "${_BM_BOOKMARK_FILE}" | while IFS='|' read m a u T t d; do
+	echo "	<div class=bm>
+		<a href='${u}'><img src='${_BM_SCREENSHOT_DIRECTORY}/${m}.png' /></a>
+		<p>${T}</p>
+	</div>" >> "${1:-${_BM_HTML_FILE}}"
 	done
 }
 
@@ -765,9 +781,9 @@ else
 # -g generate html file
 # -G use this file
 # -g -g generate 1 file per tags
-        # used      : Aa-bCcDd--F--gHh-i----Ll----Oo-p----SsTt--Vv-w--Y-------------
-        # available : --B-----Ee-fG---I-JjKk--MmNn--P-QqRr----Uu--W-Xx-yZz0123456789
-	while getopts ":a:A:b:c:d:o:s:t:T:w:x:CDFghHilLOpSvVXY" option; do
+        # used      : Aa-bCcDd--F-GgHh-i----Ll----OoPp----SsTt--Vv-w--Y-------------
+        # available : --B-----Ee-f----I-JjKk--MmNn----QqRr----Uu--W-Xx-yZz0123456789
+	while getopts ":a:A:b:c:d:G:o:s:t:T:w:x:CDFghHilLOpPSvVXY" option; do
 		case ${option} in
 			a) __a=1; __url="${OPTARG}";;	# Add url to bookmark
 			A) __A="${OPTARG}";;	# AcceleratoR
@@ -778,6 +794,7 @@ else
 			D) __D=1;;		# Print color table
 			F) __F=1;;		# Force the add or delete
 			g) (( __g++ ));;	# generate html file(s)
+			G) __G=1; __file="${OPTARG}";;	# Generate this file (only for g=1)
 			H|h) usage; exit 0;;	# Help
 			i) __i=1;;		# Ignore case when searching
 			l) __l=1;;		# List all bookmarks
@@ -843,6 +860,7 @@ fi
 [[ ${__a} -eq 1 ]] && { saveUrl ;  exit ; }
 [[ ${__C} -eq 1 ]] && { defineColors 1 ; exit ; }
 [[ ${__d} -eq 1 ]] && { delete_bookmark "${__del}";  exit ; }
+[[ ${__g} -ge 1 ]] && { bookmark_generator "${__file:=}" '';  exit ; }
 [[ ${__l} -eq 1 ]] && { search ; exit; }
 [[ ${__L} -eq 1 ]] && { list_tags ; exit; }
 [[ ${__o} -eq 1 ]] && { open_bookmark "${__open}" ; exit; }
