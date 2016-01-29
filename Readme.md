@@ -1,11 +1,12 @@
 <a name="bm" />
 ## BM
 
-  Simple bash CLI bookmarks persisted by your _~/Dropbox_, sporting
-  a webkit2png-driven html screenshot browser, even grep the screenshots
-  by tag and description:
+  Simple bash CLI bookmarks.
+  Firstly designed for Mac and now also for Linux, supports search on criteria,
+  accelerator, tags, Screenshots, configuration file, backup, and also
+  generate a HTML file with bookmarks and Screenshots.
 
-    $ bm view expressapp
+  Please note, BM needs some binaries to work: cutycapt for Linux and webkit2png for Mac.
 
   ![](http://cl.ly/FREx/Screen%20Shot%202012-03-29%20at%2011.15.14%20PM.png)
 
