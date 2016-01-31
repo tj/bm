@@ -561,7 +561,6 @@ urls() {
 #
 
 screenshot_take() {
-set -xv
 	if [ ${_BM_SCREENSHOT_GET} = true -o ${__p:=0} -eq 1 ]; then
 		[[ ! -d "${_BM_SCREENSHOT_DIRECTORY}" ]] && { mkdir -p "${_BM_SCREENSHOT_DIRECTORY}" || die "Can't create thumbnail directory." ; }
 		[[ ! -z "${_BM_CMD_PRE_CAPTURE}" ]] && { local _pre="${_BM_CMD_PRE_CAPTURE//\{FILE\}/${1}}"; _pre="${_pre//\{URL\}/${2}}"; ${_pre} ; }
@@ -569,9 +568,7 @@ set -xv
 		local _args="${_BM_CMD_CAPTURE_ARGS//\{FILE\}/${1}}"; _args="${_args//\{URL\}/${2}}";
 		${_cmd} ${_args}
 		[[ ! -z "${_BM_CMD_POST_CAPTURE}" ]] && { local _post="${_BM_CMD_POST_CAPTURE//\{FILE\}/${1}}"; _post="${_post//\{URL\}/${2}}"; ${_post} ; }
-set +xv
 	fi
-set +xv
 }
 
 picturize() {
