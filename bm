@@ -149,13 +149,15 @@ HTML=/tmp/bm.html
 #
 
 usage() {
-  cat <<EOF
+	if [ -z "${1:-}" ]; then
+		cat <<EOF
 
 Usage: ${0} [modifier(s)] command [option(s)]
 
 	Commands :
 	==========
-	-h/-H		Print this help
+	-h		Print this help
+	-H		Print help for legacy usage
 	-v/-V		Print the version
 	-a 'URL'	Add the URL to bookmark file
 			Options for -a
@@ -192,6 +194,12 @@ Usage: ${0} [modifier(s)] command [option(s)]
 			-D		Delete first occurence only
 			-F		Force the bookmark to be deleted (even if duplicate)
 
+	-g		Generate a HTML page with all bookmarks
+			If used more than once, generate a page per tag
+			Options for -g
+			-G "filename"	If g==1 then generate then use this filename to generate page
+			-O		Open the file when generated
+
 	-L		List all tags
 
 	-C		Print the color table (usefull for configuration)
@@ -203,8 +211,9 @@ Usage: ${0} [modifier(s)] command [option(s)]
 	-c 'file'	Use this configuration file instead of the default one
 
 	-b 'file'	Use this bookmark file instead of the default one
-
-
+EOF
+	else
+		cat <<EOF
 
 	Old Legacy usage still available :
 	Usage: bm [options] [cmd]
@@ -242,11 +251,13 @@ Usage: ${0} [modifier(s)] command [option(s)]
 
 	Options:
 
-	-V, --version   output bm version
-	-h, --help      output this help information
+	-V    output bm version
+	-h    output help information for new parameters
+	-H    output this help information
 
 
 EOF
+	fi
 }
 
 getAccelMax() {
@@ -484,7 +495,7 @@ style() {
    }
    body {
      padding: 50px 0 5px 50px;
-     background: #1f1f1f url(http://subtlepatterns.com/patterns/black-Linen.png);
+     background: #1f1f1f url(${_BM_SCREENSHOT_DIRECTORY}/black-Linen.png);
      font: 12px "Helvetica Neue", Helvetica, Arial, sans-serif;
    }
    .bm {
@@ -547,16 +558,6 @@ EOF
 }
 
 #
-# List urls
-#
-
-urls() {
-  cat $BOOKMARKS \
-    | grep "$1" \
-    | cut -d '|' -f 2
-}
-
-#
 # Generate bookmark screenshots
 #
 
@@ -579,77 +580,18 @@ picturize() {
 }
 
 bookmark_generator() {
+	[[ ! -f "${_BM_SCREENSHOT_DIRECTORY}/black-Linen.png" && -f "$(cd "${0%/*}";pwd))/black-Linen.png" ]] && cp "$(cd "${0%/*}";pwd))/black-Linen.png" "${_BM_SCREENSHOT_DIRECTORY}/black-Linen.png"
 	echo "<title>bm</title>" > "${1:-${_BM_HTML_FILE}}"
 	style >> "${1:-${_BM_HTML_FILE}}"
 #	search "${2:-}" | while IFS='|' read m a u T t d; do
 	awk '$0 !~ /^[  ]*#/' "${_BM_BOOKMARK_FILE}" | while IFS='|' read m a u T t d; do
 	echo "	<div class=bm>
 		<a href='${u}'><img src='${_BM_SCREENSHOT_DIRECTORY}/${m}.png' /></a>
-		<p>${T}</p>
+		<p>${T}<br/>
+		<a href='${_BM_SCREENSHOT_DIRECTORY}/${m}.png'>View image</a></p>
 	</div>" >> "${1:-${_BM_HTML_FILE}}"
 	done
-}
-
-create_bookmark_screenshots() {
-  which webkit2png > /dev/null
-
-  if test $? -ne 0; then
-    echo 
-    echo "  You need webkit2png(1) installed for this feature:"
-    echo "  $ brew install webkit2png"
-    echo 
-    exit
-  fi
-
-  local urls=`urls`
-
-  # thumbs dir
-  mkdir -p $THUMBS
-
-  # fetch thumbs
-  for url in $urls; do
-    local path=$THUMBS/`echo $url | md5`.png
-    if ! test -f $path; then
-      webkit2png -C -o out.png $url
-# cutycapt --out="out.png" --url="$url"
-      mv out.png-clipped.png $path
-      echo " ... added $path"
-    fi
-  done
-
-  rm -f out.png-{clipped,full,thumb}.png
-      mv out.png-clipped.png $path ; rm -f out.png-{clipped,full,thumb}.png
-}
-
-#
-# View bookmark screenshots grep <pattern>
-#
-
-view_bookmark_screenshots() {
-  create_bookmark_screenshots
-
-  echo "<title>Bookmarks</title>" > $HTML
-  style >> $HTML
-
-  (
-    while read line; do
-      # TODO: slow... refactor
-      local url=`echo "$line" | cut -d '|' -f 2`
-      local desc=`echo "$line" | cut -d '|' -f 3`
-      local tags=`echo "$line" | cut -d '|' -f 4`
-      local path=$THUMBS/`echo $url | md5`.png
-      echo "
-        <div class=bm>
-          <a href='$url'>
-            <img src='$path' />
-          </a>
-          <p>$desc</p>
-        </div>
-      " >> $HTML
-    done
-  ) < <(cat $BOOKMARKS | grep "$1")
-
-  open $HTML
+	[[ ${__O:=0} -eq 1 ]]	&& "${_BM_CMD_OPEN}" "${1:-${_BM_HTML_FILE}}"
 }
 
 #
@@ -735,7 +677,7 @@ defineColors() {
 ##############################################################################
 
 ##################### TRANSITIONNAL ############################
-_regex='^(tags|ls|list|search|open|add|view|stats|statistics|clear|colors)$'
+_regex='^(help|version|tags|ls|list|search|open|add|view|stats|statistics|clear|colors)$'
 if [[ ${1:-} =~ ${_regex} ]]; then
         case "$1" in
                 tags) __L=1 ;;
@@ -747,6 +689,8 @@ if [[ ${1:-} =~ ${_regex} ]]; then
 		stats|statistics) show_statistics; exit ;;
 		clear) clear_bookmarks; exit ;;
 		colors) __C=1;;
+		help) usage 1;exit 0;;
+		version) echo -n "${0} v${VERSION}";exit 0;;
         esac
 else
 #q -c config file
@@ -787,7 +731,8 @@ else
 			F) __F=1;;		# Force the add or delete
 			g) (( __g++ ));;	# generate html file(s)
 			G) __G=1; __file="${OPTARG}";;	# Generate this file (only for g=1)
-			H|h) usage; exit 0;;	# Help
+			h) usage; exit 0;;	# Help
+			H) usage 1; exit 0;;	# Help
 			i) __i=1;;		# Ignore case when searching
 			l) __l=1;;		# List all bookmarks
 			L) __L=1;;		# List all tags
