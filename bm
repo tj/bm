@@ -98,7 +98,11 @@ config() {
 	fi
 
 	# _BM_PRINT_LINE : This line is used to print datas
-	export _BM_PRINT_LINE="${_BM_PRINT_LINE:=${UNDERLINE}${GRAY_LIGHT}BM_URL${RESET} --> ${RESET}BM_TITLE ${GRAY_DARK}[BM_TAGS]\n${BOLD}${GRAY}BM_ACCEL ${GRAY_DARK}(BM_MD5)${RESET} - ${GRAY_DARK}Added: BM_DATE${RESET}}"
+#	export _BM_PRINT_LINE="${_BM_PRINT_LINE:=${UNDERLINE}${GRAY_LIGHT}BM_URL${RESET} --> ${RESET}BM_TITLE ${GRAY_DARK}[BM_TAGS]\n${BOLD}${GRAY}BM_ACCEL ${GRAY_DARK}(BM_MD5)${RESET} - ${GRAY_DARK}Added: BM_DATE${RESET}}"
+	export _BM_PRINT_LINE="${_BM_PRINT_LINE:=${BOLD}${GRAY}BM_ACCEL ${RESET}${DIM}-->${RESET} ${GRAY_LIGHT}BM_TITLE ${GRAY_DARK}${BOLD}[BM_TAGS]${RESET}\n${UNDERLINE}${DIM}BM_URL${RESET} - ${GRAY_DARK}Added: BM_DATE${RESET}}"
+
+	# _BM_PRINT_LINE_ALTERNATIVE : This line is used to print datas
+	export _BM_PRINT_LINE_ALTERNATIVE="${_BM_PRINT_LINE_ALTERNATIVE:=${BOLD}${GRAY}BM_ACCEL ${RESET}${DIM}-->${RESET} ${GRAY_LIGHT}BM_TITLE ${GRAY_DARK}${BOLD}[BM_TAGS]${RESET}\n${UNDERLINE}${DIM}BM_URL${RESET} ${GRAY_DARK}(BM_MD5)${RESET} - ${GRAY_DARK}Added: BM_DATE${RESET}  - ${GRAY_DARK}Picture: BM_PICTURE${RESET}}"
 
 	# _BM_PRINT_SCHEME : If set to no, bm will remove scheme from URL printing
 	export _BM_PRINT_SCHEME=${_BM_PRINT_SCHEME:=true}
@@ -302,6 +306,7 @@ readLines() {
 	IFS='|'
 	while read m a u T t d; do
 		_line="${_BM_PRINT_LINE}"
+		[[ ${__z:=0} -eq 1 ]] && _line="${_BM_PRINT_LINE_ALTERNATIVE}"
 		_line="${_line//BM_MD5/$m}"
 		if [ ${_BM_PRINT_SCHEME} = false ]; then
 			u="$(sed 's/^[[:space:]]*\(f\|ht\)tps*:\/\///' <<< "${u}")"
@@ -311,6 +316,9 @@ readLines() {
 		_line="${_line//BM_TAGS/$t}"
 		_line="${_line//BM_ACCEL/${a:=No-Accelerator}}"
 		_line="${_line//BM_DATE/${d}}"
+		local _pict="$(stat -c '%y' "${_BM_SCREENSHOT_DIRECTORY}/${m}.png")"
+		[[ ! -z "${_pict}" ]] && _pict="$(date '+%FT%TZ' --date "${_pict}")"
+		_line="${_line//BM_PICTURE/${_pict:=None}}"
 		echo -e "${_line}\n"
 	done
 }
@@ -702,9 +710,9 @@ else
 # -g generate html file
 # -G use this file
 # -g -g generate 1 file per tags
-        # used      : Aa-bCcDd--F-GgHh-i----Ll----OoPp----SsTt--Vv-w--Y-------------
-        # available : --B-----Ee-f----I-JjKk--MmNn----QqRr----Uu--W-Xx-yZz0123456789
-	while getopts ":a:A:b:c:d:G:o:s:t:T:w:x:CDFghHilLOpPSvVXY" option; do
+        # used      : Aa-bCcDd--F-GgHh-i----Ll----OoPp----SsTt--Vv-w--Y--z----------
+        # available : --B-----Ee-f----I-JjKk--MmNn----QqRr----Uu--W-Xx-yZ-0123456789
+	while getopts ":a:A:b:c:d:G:o:s:t:T:w:x:CDFghHilLOpPSvVXYz" option; do
 		case ${option} in
 			a) __a=1; __url="${OPTARG}";;	# Add url to bookmark
 			A) __A="${OPTARG}";;	# AcceleratoR
@@ -734,6 +742,7 @@ else
 			x) __x=1; __copy="${OPTARG}";;	# Copy
 			X) __X=1;;		# Copy First
 			Y) __Y=1;;		# Open/copy All
+			z) __z=1;;		# Alternative print listing
 			:) echo "Missing argument for '-${OPTARG}'" >&2 ; exit 1 ;;
 			?) echo "Argument unknown '-${OPTARG}'" >&2 ; exit 1 ;; # usage;;
 			*) echo "Argument unknown '-${option}'" >&2 ; exit 1 ;; # usage;;
