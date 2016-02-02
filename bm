@@ -159,10 +159,13 @@ Usage: ${0} [modifier(s)] command [option(s)]
 			-p		Force the screenshot to be taken
 	
 	-l		List all URLs (default action, same thing as calling bm without args)
+			Options for -l
+			-z		Use the alternate print list
 
 	-s 'object'	Search for bookmarks
 			Options for -s
 			-i		Incensitive case search
+			-z		Use the alternate print list
 			Objects are
 				:string	Search in accelerator list
 				+string	Search in tags list
@@ -773,7 +776,7 @@ if [ ! -f "${_BM_BOOKMARK_FILE}" -a ${_BM_CREATE_BOOKMARK_FILE} = true ]; then
 fi
 
 # Starting to work with args. If none probably list...
-[[ ${#} -eq 0 && ${_BM_NO_ARGS_FORCE_HELP:=0} -eq 0 ]] && __l=1
+[[ ${#} -eq 0 && ${_BM_NO_ARGS_FORCE_HELP} = true ]] && { usage ; exit; }
 
 # Only one action at a time
 if [ $(( ${__a:=0} + ${__C:=0} + ${__d:=0} + ${__g:=0} + ${__l:=0} + ${__L:=0} + ${__o:=0} + ${__P:=0} + ${__s:=0} + ${__S:=0} + ${__x:=0} )) -gt 1 ]; then
@@ -799,5 +802,6 @@ fi
 [[ ${__x} -eq 1 ]] && { copy_bookmark "${__copy}" ; exit; }
 [[ ${__s} -eq 1 ]] && { search_bookmarks "${__search}" ; exit; }
 [[ ${__S} -eq 1 ]] && { stats ; exit; }
+search
 
 # $Format:%cn @ %cD$ : $Id$
