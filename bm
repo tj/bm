@@ -98,29 +98,17 @@ config() {
 	fi
 
 	# _BM_PRINT_LINE : This line is used to print datas
-	export _BM_PRINT_LINE="${_BM_PRINT_LINE:=${UNDERLINE}${GRAY_LIGHT}BM_URL${RESET} --> ${RESET}BM_TITLE ${GRAY_DARK}[BM_TAGS]\n${BOLD}${GRAY}BM_ACCEL ${GRAY_DARK}(BM_MD5)${RESET} - ${GRAY_DARK}Added: BM_DATE${RESET}}"
+#	export _BM_PRINT_LINE="${_BM_PRINT_LINE:=${UNDERLINE}${GRAY_LIGHT}BM_URL${RESET} --> ${RESET}BM_TITLE ${GRAY_DARK}[BM_TAGS]\n${BOLD}${GRAY}BM_ACCEL ${GRAY_DARK}(BM_MD5)${RESET} - ${GRAY_DARK}Added: BM_DATE${RESET}}"
+	export _BM_PRINT_LINE="${_BM_PRINT_LINE:=${BOLD}${GRAY}BM_ACCEL ${RESET}${DIM}-->${RESET} ${GRAY_LIGHT}BM_TITLE ${GRAY_DARK}${BOLD}[BM_TAGS]${RESET}\n${UNDERLINE}${DIM}BM_URL${RESET} - ${GRAY_DARK}Added: BM_DATE${RESET}}"
+
+	# _BM_PRINT_LINE_ALTERNATIVE : This line is used to print datas
+	export _BM_PRINT_LINE_ALTERNATIVE="${_BM_PRINT_LINE_ALTERNATIVE:=${BOLD}${GRAY}BM_ACCEL ${RESET}${DIM}-->${RESET} ${GRAY_LIGHT}BM_TITLE ${GRAY_DARK}${BOLD}[BM_TAGS]${RESET}\n${UNDERLINE}${DIM}BM_URL${RESET} ${GRAY_DARK}(BM_MD5)${RESET} - ${GRAY_DARK}Added: BM_DATE${RESET}  - ${GRAY_DARK}Picture: BM_PICTURE${RESET}}"
 
 	# _BM_PRINT_SCHEME : If set to no, bm will remove scheme from URL printing
 	export _BM_PRINT_SCHEME=${_BM_PRINT_SCHEME:=true}
 
 	# _BM_SEARCH_IGNORECASE : Ignore case if set when searching (overrided by -i)
 	export _BM_SEARCH_IGNORECASE=${_BM_SEARCH_IGNORECASE:=false}
-}
-
-
-# headers prints the header of a markdown file
-getHeaders() {
-        awk '/^---$/ { c++; next } c == 1'
-}
-
-# header prints a specific header value
-getHeader() {
-        getHeaders | sed -e '/^[[:space:]]*'"${1}"'[[:space:]]*:/!d;s/[[:space:]]*'"${1}"'[[:space:]]*:[[:space:]]*\(.*\)/\1/g'
-}
-
-# body prints the body of a markdown file
-getBody() {
-        awk '/^---$/ { c++; next } c >= 2'
 }
 
 # slug creates a friendly URL like 'hello-world'
@@ -133,7 +121,7 @@ slug() {
 
 # version
 RELEASE='$Format:%h$'
-VERSION='0.5.0'
+VERSION='0.5.1'
 
 
 # thumbs cache
@@ -171,10 +159,13 @@ Usage: ${0} [modifier(s)] command [option(s)]
 			-p		Force the screenshot to be taken
 	
 	-l		List all URLs (default action, same thing as calling bm without args)
+			Options for -l
+			-z		Use the alternate print list
 
 	-s 'object'	Search for bookmarks
 			Options for -s
 			-i		Incensitive case search
+			-z		Use the alternate print list
 			Objects are
 				:string	Search in accelerator list
 				+string	Search in tags list
@@ -318,6 +309,7 @@ readLines() {
 	IFS='|'
 	while read m a u T t d; do
 		_line="${_BM_PRINT_LINE}"
+		[[ ${__z:=0} -eq 1 ]] && _line="${_BM_PRINT_LINE_ALTERNATIVE}"
 		_line="${_line//BM_MD5/$m}"
 		if [ ${_BM_PRINT_SCHEME} = false ]; then
 			u="$(sed 's/^[[:space:]]*\(f\|ht\)tps*:\/\///' <<< "${u}")"
@@ -327,6 +319,9 @@ readLines() {
 		_line="${_line//BM_TAGS/$t}"
 		_line="${_line//BM_ACCEL/${a:=No-Accelerator}}"
 		_line="${_line//BM_DATE/${d}}"
+		local _pict="$(stat -c '%y' "${_BM_SCREENSHOT_DIRECTORY}/${m}.png")"
+		[[ ! -z "${_pict}" ]] && _pict="$(date '+%FT%TZ' --date "${_pict}")"
+		_line="${_line//BM_PICTURE/${_pict:=None}}"
 		echo -e "${_line}\n"
 	done
 }
@@ -487,7 +482,7 @@ list_tags() {
 
 style() {
   cat <<EOF
-<style>
+<style  type="text/css">
   * {
      -webkit-box-sizing: border-box;
      -moz-box-sizing: border-box;
@@ -581,16 +576,17 @@ picturize() {
 
 bookmark_generator() {
 	[[ ! -f "${_BM_SCREENSHOT_DIRECTORY}/black-Linen.png" && -f "$(cd "${0%/*}";pwd))/black-Linen.png" ]] && cp "$(cd "${0%/*}";pwd))/black-Linen.png" "${_BM_SCREENSHOT_DIRECTORY}/black-Linen.png"
-	echo "<title>bm</title>" > "${1:-${_BM_HTML_FILE}}"
+	echo "<!DOCTYPE html><html><head><meta charset="UTF-8"><title>bm v${VERSION} : all your bookmarks</title>" > "${1:-${_BM_HTML_FILE}}"
 	style >> "${1:-${_BM_HTML_FILE}}"
+	echo "</head><body>" >> "${1:-${_BM_HTML_FILE}}"
 #	search "${2:-}" | while IFS='|' read m a u T t d; do
 	awk '$0 !~ /^[  ]*#/' "${_BM_BOOKMARK_FILE}" | while IFS='|' read m a u T t d; do
 	echo "	<div class=bm>
-		<a href='${u}'><img src='${_BM_SCREENSHOT_DIRECTORY}/${m}.png' /></a>
-		<p>${T}<br/>
-		<a href='${_BM_SCREENSHOT_DIRECTORY}/${m}.png'>View image</a></p>
+		<a href='${u}'><img src='${_BM_SCREENSHOT_DIRECTORY}/${m}.png' alt='${u}' /></a>
+		<p>${T}<br/><a href='${_BM_SCREENSHOT_DIRECTORY}/${m}.png'>View image</a></p>
 	</div>" >> "${1:-${_BM_HTML_FILE}}"
 	done
+	echo "</body></html>" >> "${1:-${_BM_HTML_FILE}}"
 	[[ ${__O:=0} -eq 1 ]]	&& "${_BM_CMD_OPEN}" "${1:-${_BM_HTML_FILE}}"
 }
 
@@ -717,9 +713,9 @@ else
 # -g generate html file
 # -G use this file
 # -g -g generate 1 file per tags
-        # used      : Aa-bCcDd--F-GgHh-i----Ll----OoPp----SsTt--Vv-w--Y-------------
-        # available : --B-----Ee-f----I-JjKk--MmNn----QqRr----Uu--W-Xx-yZz0123456789
-	while getopts ":a:A:b:c:d:G:o:s:t:T:w:x:CDFghHilLOpPSvVXY" option; do
+        # used      : Aa-bCcDd--F-GgHh-i----Ll----OoPp----SsTt--Vv-w--Y--z----------
+        # available : --B-----Ee-f----I-JjKk--MmNn----QqRr----Uu--W-Xx-yZ-0123456789
+	while getopts ":a:A:b:c:d:G:o:s:t:T:w:x:CDFghHilLOpPSvVXYz" option; do
 		case ${option} in
 			a) __a=1; __url="${OPTARG}";;	# Add url to bookmark
 			A) __A="${OPTARG}";;	# AcceleratoR
@@ -749,6 +745,7 @@ else
 			x) __x=1; __copy="${OPTARG}";;	# Copy
 			X) __X=1;;		# Copy First
 			Y) __Y=1;;		# Open/copy All
+			z) __z=1;;		# Alternative print listing
 			:) echo "Missing argument for '-${OPTARG}'" >&2 ; exit 1 ;;
 			?) echo "Argument unknown '-${OPTARG}'" >&2 ; exit 1 ;; # usage;;
 			*) echo "Argument unknown '-${option}'" >&2 ; exit 1 ;; # usage;;
@@ -779,7 +776,7 @@ if [ ! -f "${_BM_BOOKMARK_FILE}" -a ${_BM_CREATE_BOOKMARK_FILE} = true ]; then
 fi
 
 # Starting to work with args. If none probably list...
-[[ ${#} -eq 0 && ${_BM_NO_ARGS_FORCE_HELP:=0} -eq 0 ]] && __l=1
+[[ ${#} -eq 0 && ${_BM_NO_ARGS_FORCE_HELP} = true ]] && { usage ; exit; }
 
 # Only one action at a time
 if [ $(( ${__a:=0} + ${__C:=0} + ${__d:=0} + ${__g:=0} + ${__l:=0} + ${__L:=0} + ${__o:=0} + ${__P:=0} + ${__s:=0} + ${__S:=0} + ${__x:=0} )) -gt 1 ]; then
@@ -805,5 +802,6 @@ fi
 [[ ${__x} -eq 1 ]] && { copy_bookmark "${__copy}" ; exit; }
 [[ ${__s} -eq 1 ]] && { search_bookmarks "${__search}" ; exit; }
 [[ ${__S} -eq 1 ]] && { stats ; exit; }
+search
 
 # $Format:%cn @ %cD$ : $Id$
