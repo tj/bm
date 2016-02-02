@@ -107,22 +107,6 @@ config() {
 	export _BM_SEARCH_IGNORECASE=${_BM_SEARCH_IGNORECASE:=false}
 }
 
-
-# headers prints the header of a markdown file
-getHeaders() {
-        awk '/^---$/ { c++; next } c == 1'
-}
-
-# header prints a specific header value
-getHeader() {
-        getHeaders | sed -e '/^[[:space:]]*'"${1}"'[[:space:]]*:/!d;s/[[:space:]]*'"${1}"'[[:space:]]*:[[:space:]]*\(.*\)/\1/g'
-}
-
-# body prints the body of a markdown file
-getBody() {
-        awk '/^---$/ { c++; next } c >= 2'
-}
-
 # slug creates a friendly URL like 'hello-world'
 slug() {
         iconv -f utf8 -t ascii//TRANSLIT | tr -cs '[:alnum:]\n' - | tr '[:upper:]' '[:lower:]' | sed 's|^-*||;s|-*$||'
@@ -487,7 +471,7 @@ list_tags() {
 
 style() {
   cat <<EOF
-<style>
+<style  type="text/css">
   * {
      -webkit-box-sizing: border-box;
      -moz-box-sizing: border-box;
@@ -581,16 +565,17 @@ picturize() {
 
 bookmark_generator() {
 	[[ ! -f "${_BM_SCREENSHOT_DIRECTORY}/black-Linen.png" && -f "$(cd "${0%/*}";pwd))/black-Linen.png" ]] && cp "$(cd "${0%/*}";pwd))/black-Linen.png" "${_BM_SCREENSHOT_DIRECTORY}/black-Linen.png"
-	echo "<title>bm</title>" > "${1:-${_BM_HTML_FILE}}"
+	echo "<!DOCTYPE html><html><head><meta charset="UTF-8"><title>bm v${VERSION} : all your bookmarks</title>" > "${1:-${_BM_HTML_FILE}}"
 	style >> "${1:-${_BM_HTML_FILE}}"
+	echo "</head><body>" >> "${1:-${_BM_HTML_FILE}}"
 #	search "${2:-}" | while IFS='|' read m a u T t d; do
 	awk '$0 !~ /^[  ]*#/' "${_BM_BOOKMARK_FILE}" | while IFS='|' read m a u T t d; do
 	echo "	<div class=bm>
-		<a href='${u}'><img src='${_BM_SCREENSHOT_DIRECTORY}/${m}.png' /></a>
-		<p>${T}<br/>
-		<a href='${_BM_SCREENSHOT_DIRECTORY}/${m}.png'>View image</a></p>
+		<a href='${u}'><img src='${_BM_SCREENSHOT_DIRECTORY}/${m}.png' alt='${u}' /></a>
+		<p>${T}<br/><a href='${_BM_SCREENSHOT_DIRECTORY}/${m}.png'>View image</a></p>
 	</div>" >> "${1:-${_BM_HTML_FILE}}"
 	done
+	echo "</body></html>" >> "${1:-${_BM_HTML_FILE}}"
 	[[ ${__O:=0} -eq 1 ]]	&& "${_BM_CMD_OPEN}" "${1:-${_BM_HTML_FILE}}"
 }
 
