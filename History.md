@@ -1,4 +1,23 @@
 
+0.5.1 / 2016-02-02 
+==================
+
+  * Added an alternate print list with `-z`
+  * HTML file generated should be good in validators
+
+0.5.0 / 2016-02-01 
+==================
+
+  * Engine rewritted
+  * Added tons of configuration variables
+  * Added use of `cutycapt` for Linux
+  * Added duplicate check
+  * Added Accelerator to find your bookmark
+  * Changed interface, the old one still exist but new functions use arguments `-a`, `-t`, ...
+  * Generate screenshot when added in bookmark
+  * Added backup
+  * And more, see source or help.
+
 0.4.0 / 2012-03-30 
 ==================
 
