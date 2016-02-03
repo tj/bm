@@ -608,7 +608,7 @@ checkBinaries() {
 	if [ ${#} -ne 0 ]; then
 		local cmdErr="${@}"
 	else
-		local cmdErr="sed awk date iconv head cat curl ${_BM_CMD_OPEN} ${_BM_CMD_MD5} column"
+		local cmdErr="sed awk date iconv cat curl ${_BM_CMD_OPEN} ${_BM_CMD_MD5} column"
 	fi
 	set ${cmdErr}
 	while [ ${#} -ne 0 ]; do
