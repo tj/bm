@@ -78,8 +78,13 @@ Options:
   Later I'll make it so you can tweak the path, however for now the bookmarks are persisted to _~/Dropbox/bookmarks_:
   
 ```
-$ cat ~/Dropbox/bookmarks 
-https://kippt.com|bookmark management|clean white design
-http://subtlepatterns.com|tiling background images|design textures
-http://www.uiparade.com|ui component designs|design ui
+$ cat ~/sync/bm.lnk
+bd8b3eff7fa82a0382a3e7576c5363b6|:bm|https://github.com/Flyounet/bm/|bm a cool enhanced bookmark tool for your console|default,shell|2016-01-18T07:21:36Z
+2981b5cae113491ddb18e0d51454f0d9|:bmtj|https://github.com/tj/bm/|The original bm : a cool bookmark tool for your console|default,shell|2016-01-18T07:21:36Z
+#fd65acec3e2abff9d2fd3c581df3142d|:7|http://flyounet.net|http-flyounet-net|site,dev, bli,bla,blo,bli|2016-01-20T17:44:02Z
+ # fd65acec3e2abff9d2fd3c581df3142d|:9|http://flyounet.net|http-flyounet-net|site,dev, ba,bello,belli,bella,arthur,toto,titi,tata,bli,bla,blo,bli|2016-01-20T17:46:24Z
+ac313b7d866bc76487858b243f9f3ff0|:HP|http://localhost:631/printers/HP8600|Cups: Imprimante HP 8600|admin,cups,local|2016-01-31T18:33:11Z
+ae6461ffeb6cd8393c4c100d026db789|:sync|https://127.0.0.1:8384/|SyncThings Local|admin,network,syncthings|2016-01-31T19:05:08Z
+7ad10b8decf3ef55ce4e8a95e80f4b9d|:home|http://flyounet.net/life|3615 my life|blog,home|2016-01-31T21:09:33Z
+7a3a43da3e8b8f58e5ade40eab35a1fd|:syntaxe|http://flyounet.net/life/2015-11-01-time-to-markdown.html|Syntaxe markdown|blog,home,markdown|2016-01-31T21:12:11Z
 ```
