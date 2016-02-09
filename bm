@@ -253,11 +253,15 @@ EOF
 
 getAccelMax() {
 #		$2 ~ /^[[:SPACE:]]*:[[:SPACE:]]*[0-9][[:SPACE:]]*+$/ { n=gensub(/:([0-9])+/, "\\1", "g", $2); if (n>m) m=n; }
-	awk -F'|' '
-		BEGIN { m=0; }
-		$0 !~ /^[ 	]*#/ && $2 ~ /^[:space:]*:[:space:]*[0-9]+[:space:]*$/ { sub(/:+/, "", $2); if ($2>m) m=$2; }
-		END { print m+1; }
-	' "${_BM_BOOKMARK_FILE}"
+#	awk -F'|' '
+#		BEGIN { m=0; }
+#		$0 !~ /^[ 	]*#/ && $2 ~ /^[:space:]*:[:space:]*[0-9]+[:space:]*$/ { sub(/:+/, "", $2); if ($2>m) m=$2; }
+#		END { print m+1; }
+#	' "${_BM_BOOKMARK_FILE}"
+	while read a; do
+		(( ${a:=0} >= ${_max:=0} )) && (( _max=${a}+1 ))
+	done <<< "$( awk -F'|' '$0 !~ /^[ 	]*#/ && $2 ~ /^[:space:]*:[:space:]*[0-9]+[:space:]*$/ { sub(/:+/, "", $2); print $2; }' "${_BM_BOOKMARK_FILE}")"
+	echo -n "${_max}"
 }
 
 backupBm() {
@@ -413,19 +417,21 @@ delete_bookmark() {
 	[[ -z "${@//[ 	]/}" ]] && die "You MUST give an argument !"
 	local _lines="$(search "${@}")"
 	if [ ${_BM_DELETE_ALLOWED} = true  ]; then
+		while read _nl; do readLines <<< "${_nl}"; done <<< "$(echo -e "${_lines}")"
 		if [ ${_BM_ASK_BEFORE_OPEN} = true -a ${__D:=0} -eq 0 -a ${__Y:=0} -eq 0 ]; then
 			if [ $(wc -l <<< "${_lines}") -ge 1 ]; then
 				read -p"You're about to delete entry(ies). Ready ? [Y/N] : " -n1 _answer
 				[[ "${_answer,,}" != 'y' ]] && die "\nUse -D to force the backup if not configured."
+				echo ''
 			fi
 		fi
 		backupBm
 		local _all=''
 		while read _nl; do
-			readLines <<< "${_nl}"
 			if [ ${_BM_DELETE_TO_FILE} = true -o ${__D:=0} -eq 1 ]; then
 				echo "${_nl}" >> "${_BM_DELETE_FILE}"
 			fi
+			_nl="${_nl//\|/\\|}"
 			sed -i -e '/'"${_nl//\//\\/}"'/d' "${_BM_BOOKMARK_FILE}"
 		done <<< "$(echo -e "${_lines}")"
 	else
