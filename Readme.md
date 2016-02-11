@@ -6,6 +6,8 @@
   accelerator, tags, Screenshots, configuration file, backup, and also
   generate a HTML file with bookmarks and Screenshots.
 
+  ![](http://cl.ly/FREx/Screen%20Shot%202012-03-29%20at%2011.15.14%20PM.png)
+
   Please note, BM needs some binaries to work see configuration to change them): 
     * For the Screenshot part:
     * * `cutycapt` for Linux
@@ -17,8 +19,6 @@
     * * `md5sum` for Linux
     * * `md5` for Mac.
     * Other tools: `sed`, `awk`, `date`, `iconv`, `cat`, `curl`, `column` and `bash`
-
-  ![](http://cl.ly/FREx/Screen%20Shot%202012-03-29%20at%2011.15.14%20PM.png)
 
 ## Install
 
@@ -157,9 +157,9 @@ Usage: ./bm [modifier(s)] command [option(s)]
 
   Run `bm view [query]` to view the bookmark screenshots in your default browser. This requires `webkit2png(1)` (`brew install webkit2png`).
 
-## Dropbox
+## Storage
 
-  Later I'll make it so you can tweak the path, however for now the bookmarks are persisted to _~/Dropbox/bookmarks_:
+  Store the file(s) wherever you want. Use configuration (either internal or with a config file with `-c`), or parameters (`-b` for bookmark file).
   
 ```
 $ cat ~/sync/bm.lnk

@@ -1,4 +1,23 @@
 
+0.6.x / 2016-03-xx 
+==================
+
+  * #17 : Add a Flag to open image stored for a link.
+  * #18 : Store a date for the screenshot taken.
+  * #19 : Add a Flag to take the screenshot for a specific link.
+
+0.5.3 / 2016-02-xx
+==================
+
+  * Documentation update
+  * History update
+
+0.5.2 / 2016-02-11 
+==================
+
+  * Fix #15 : Title with Pipe not working (and also correct the delete function due to this correction)
+  * Fix #16 : Autoincrement doesn't work for more than 9 item
+
 0.5.1 / 2016-02-02 
 ==================
 
