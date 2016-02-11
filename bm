@@ -582,7 +582,7 @@ picturize() {
 }
 
 bookmark_generator() {
-	[[ ! -f "${_BM_SCREENSHOT_DIRECTORY}/black-Linen.png" && -f "$(cd "${0%/*}";pwd))/black-Linen.png" ]] && cp "$(cd "${0%/*}";pwd))/black-Linen.png" "${_BM_SCREENSHOT_DIRECTORY}/black-Linen.png"
+	[[ ! -f "${_BM_SCREENSHOT_DIRECTORY}/black-Linen.png" && -f "/usr/share/bm/black-Linen.png" ]] && cp "/usr/share/bm/black-Linen.png" "${_BM_SCREENSHOT_DIRECTORY}/black-Linen.png"
 	echo "<!DOCTYPE html><html><head><meta charset="UTF-8"><title>bm v${VERSION} : all your bookmarks</title>" > "${1:-${_BM_HTML_FILE}}"
 	style >> "${1:-${_BM_HTML_FILE}}"
 	echo "</head><body>" >> "${1:-${_BM_HTML_FILE}}"
@@ -615,7 +615,7 @@ checkBinaries() {
 	if [ ${#} -ne 0 ]; then
 		local cmdErr="${@}"
 	else
-		local cmdErr="sed awk date iconv head cat curl ${_BM_CMD_OPEN} ${_BM_CMD_MD5} column"
+		local cmdErr="sed awk date iconv cat curl ${_BM_CMD_OPEN} ${_BM_CMD_MD5} column"
 	fi
 	set ${cmdErr}
 	while [ ${#} -ne 0 ]; do
