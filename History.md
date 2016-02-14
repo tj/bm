@@ -2,7 +2,7 @@
 0.6.x / 2016-03-xx 
 ==================
 
-  * #17 : Add a Flag to open image stored for a link.
+  * #17 : Add a Flag (-r) to open image stored for a link.
   * #18 : Store a date for the screenshot taken.
   * #19 : Add a Flag to take the screenshot for a specific link.
 
