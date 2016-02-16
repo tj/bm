@@ -102,6 +102,7 @@ Usage: ./bm [modifier(s)] command [option(s)]
 	   'URL part'	Options for -d
 			-D		Delete first occurence only
 			-F		Force the bookmark to be deleted (even if duplicate)
+			-p		Delete the associated picture (no trash available)
 
 	-g		Generate a HTML page with all bookmarks
 			If used more than once, generate a page per tag
