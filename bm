@@ -40,6 +40,9 @@ config() {
 	# _BM_DELETE_TO_FILE : Allow or disallow the deleted URLs to be copied in the Trash (true or false)
 	export _BM_DELETE_TO_FILE=${_BM_DELETE_TO_FILE:=true}
 
+	# _BM_DELETE_PICTURE : Allow or disallow the picture associated to a URL to be deleted (true or false)
+	export _BM_DELETE_PICTURE=${_BM_DELETE_PICTURE:=true}
+
 	# _BM_DUPS_DETECT : Look for duplicates URL before insert in bookmark file (ovverided by -F)
 	export _BM_DUPS_DETECT=${_BM_DUPS_DETECT:=true}
 
@@ -198,6 +201,7 @@ Usage: ${0} [modifier(s)] command [option(s)]
 	   'URL part'	Options for -d
 			-D		Delete first occurence only
 			-F		Force the bookmark to be deleted (even if duplicate)
+			-p		Delete the associated picture (no trash available)
 
 	-g		Generate a HTML page with all bookmarks
 			If used more than once, generate a page per tag
@@ -474,6 +478,7 @@ delete_bookmark() {
 			if [ ${_BM_DELETE_TO_FILE} = true -o ${__D:=0} -eq 1 ]; then
 				echo "${_nl}" >> "${_BM_DELETE_FILE}"
 			fi
+			[[ ${_BM_DELETE_PICTURE} = true || ${__p:=0} -eq 1 ]] && rm -f -- "${_BM_SCREENSHOT_DIRECTORY}/${_nl%%|*}.png"
 			_nl="${_nl//\|/\\|}"
 			sed -i -e '/'"${_nl//\//\\/}"'/d' "${_BM_BOOKMARK_FILE}"
 		done <<< "$(echo -e "${_lines}")"
