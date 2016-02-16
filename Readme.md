@@ -85,6 +85,18 @@ Usage: ./bm [modifier(s)] command [option(s)]
 			-O		If more than one answer force the first bookmark to be open
 			-Y		If more than one answer force ALL bookmarks to be open
 
+	-x 'object'	Search for bookmarks and copy it to clipboard (use the same argument as for -s)
+			Options for -x
+			-i		Incensitive case search
+			-X		If more than one answer force the first bookmark to be copied
+			-Y		If more than one answer force ALL bookmarks to be copied
+
+	-r 'object'	Search for bookmarks and Print the recorded associated picture (use the same argument as for -s)
+			Options for -r
+			-i		Incensitive case search
+			-O		If more than one answer force the first bookmark to have its picture printed
+			-Y		If more than one answer force ALL bookmarks to have their picture printed
+
 	-d 'URL' or	Delete the URL from bookmark file
 	   md5sum or
 	   'URL part'	Options for -d
@@ -96,6 +108,11 @@ Usage: ./bm [modifier(s)] command [option(s)]
 			Options for -g
 			-G "filename"	If g==1 then generate then use this filename to generate page
 			-O		Open the file when generated
+
+	-P 'object'	Generate all Non existant picture (check done for all URL in bm), if none argument.
+			If an argument is given (use the same argument as for -s) only the results will have a picture.
+			Options for -P
+			-F		Force the picture to be taken again (even if already exists).
 
 	-L		List all tags
 
