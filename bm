@@ -121,7 +121,7 @@ slug() {
 
 # version
 RELEASE='$Format:%h$'
-VERSION='0.5.1'
+VERSION='0.5.3'
 
 
 # thumbs cache
