@@ -2,6 +2,7 @@
 ## BM
 
   Simple bash CLI bookmarks.
+
   Firstly designed for Mac and now also for Linux, supports search on criteria,
   accelerator, tags, Screenshots, configuration file, backup, and also
   generate a HTML file with bookmarks and Screenshots.
@@ -9,6 +10,7 @@
   ![](http://cl.ly/FREx/Screen%20Shot%202012-03-29%20at%2011.15.14%20PM.png)
 
   Please note, BM needs some binaries to work see configuration to change them): 
+
     * For the Screenshot part:
     * * `cutycapt` for Linux
     * * `webkit2png` for Mac.
@@ -44,7 +46,6 @@ $ make uninstall
 ## Usage
 
 ```
-
 Usage: ./bm [modifier(s)] command [option(s)]
 
 	Commands :
@@ -147,9 +148,6 @@ Usage: ./bm [modifier(s)] command [option(s)]
 	-V    output bm version
 	-h    output help information for new parameters
 	-H    output this help information
-
-
-
 ```
 
 <a name="screenshots" />
