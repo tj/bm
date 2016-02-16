@@ -6,7 +6,7 @@
   * #18 : Store a date for the screenshot taken.
   * #19 : Add a Flag (-P) to take the screenshot for a specific link.
 
-0.5.3 / 2016-02-xx
+0.5.3 / 2016-02-16
 ==================
 
   * Documentation update
