@@ -2,6 +2,7 @@
 ## BM
 
   Simple bash CLI bookmarks.
+
   Firstly designed for Mac and now also for Linux, supports search on criteria,
   accelerator, tags, Screenshots, configuration file, backup, and also
   generate a HTML file with bookmarks and Screenshots.
@@ -9,6 +10,7 @@
   ![](http://cl.ly/FREx/Screen%20Shot%202012-03-29%20at%2011.15.14%20PM.png)
 
   Please note, BM needs some binaries to work see configuration to change them): 
+
     * For the Screenshot part:
     * * `cutycapt` for Linux
     * * `webkit2png` for Mac.
@@ -44,7 +46,6 @@ $ make uninstall
 ## Usage
 
 ```
-
 Usage: ./bm [modifier(s)] command [option(s)]
 
 	Commands :
@@ -84,17 +85,35 @@ Usage: ./bm [modifier(s)] command [option(s)]
 			-O		If more than one answer force the first bookmark to be open
 			-Y		If more than one answer force ALL bookmarks to be open
 
+	-x 'object'	Search for bookmarks and copy it to clipboard (use the same argument as for -s)
+			Options for -x
+			-i		Incensitive case search
+			-X		If more than one answer force the first bookmark to be copied
+			-Y		If more than one answer force ALL bookmarks to be copied
+
+	-r 'object'	Search for bookmarks and Print the recorded associated picture (use the same argument as for -s)
+			Options for -r
+			-i		Incensitive case search
+			-O		If more than one answer force the first bookmark to have its picture printed
+			-Y		If more than one answer force ALL bookmarks to have their picture printed
+
 	-d 'URL' or	Delete the URL from bookmark file
 	   md5sum or
 	   'URL part'	Options for -d
 			-D		Delete first occurence only
 			-F		Force the bookmark to be deleted (even if duplicate)
+			-p		Delete the associated picture (no trash available)
 
 	-g		Generate a HTML page with all bookmarks
 			If used more than once, generate a page per tag
 			Options for -g
 			-G "filename"	If g==1 then generate then use this filename to generate page
 			-O		Open the file when generated
+
+	-P 'object'	Generate all Non existant picture (check done for all URL in bm), if none argument.
+			If an argument is given (use the same argument as for -s) only the results will have a picture.
+			Options for -P
+			-F		Force the picture to be taken again (even if already exists).
 
 	-L		List all tags
 
@@ -147,9 +166,6 @@ Usage: ./bm [modifier(s)] command [option(s)]
 	-V    output bm version
 	-h    output help information for new parameters
 	-H    output this help information
-
-
-
 ```
 
 <a name="screenshots" />
