@@ -11,16 +11,16 @@
 
   Please note, BM needs some binaries to work see configuration to change them): 
 
-    * For the Screenshot part:
-    * * `cutycapt` for Linux
-    * * `webkit2png` for Mac.
-    * For the clipboard copy:
-    * * `xsel` for Linux
-    * * As I don't have any Mac, nothing for the time being.
-    * For the md5 part:
-    * * `md5sum` for Linux
-    * * `md5` for Mac.
-    * Other tools: `sed`, `awk`, `date`, `iconv`, `cat`, `curl`, `column` and `bash`
+  * For the Screenshot part:
+  * * `cutycapt` for Linux
+  * * `webkit2png` for Mac.
+  * For the clipboard copy:
+  * * `xsel` for Linux
+  * * As I don't have any Mac, nothing for the time being.
+  * For the md5 part:
+  * * `md5sum` for Linux
+  * * `md5` for Mac.
+  * Other tools: `sed`, `awk`, `date`, `iconv`, `cat`, `curl`, `column` and `bash`
 
 ## Install
 
