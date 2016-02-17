@@ -9,7 +9,9 @@ config() {
 	[[ "${__w:=$HOME}" != "${HOME}" ]] && echo "Working dir changed to ${__w}"
 	[[ "${__w: -1}" != '/' ]] && __w="${__w//\/\//\/}/"
 	# If a config file is given, we take it first, or look for a default config file
+	export _BM_CONFIG_FILE="${__w}${_BM_DEFAULT_CONFIG_FILENAME}"
 	if [ -f "$(readlink -m "${1:-}")" ]; then
+		export _BM_CONFIG_FILE="${1}"
 		. "${1}"
 	elif [ ${__n:=0} -eq 0 -a -f "${__w}${_BM_DEFAULT_CONFIG_FILENAME}" ]; then
 		. "${__w}${_BM_DEFAULT_CONFIG_FILENAME}"
@@ -53,7 +55,7 @@ config() {
 	export _BM_GET_PAGE_TITLE=${_BM_GET_PAGE_TITLE:=true}
 
 	# _BM_SCREENSHOT_DIRECTORY : Where to store the screenshot taken
-	export _BM_SCREENSHOT_DIRECTORY="${_BM_SCREENSHOT_DIRECTORY:=${__w}/.bm.shots}"
+	export _BM_SCREENSHOT_DIRECTORY="${_BM_SCREENSHOT_DIRECTORY:=${__w}.bm.shots}"
 
 	# _BM_SCREENSHOT_GET : When adding a URL try to take a screenshot in background
 	export _BM_SCREENSHOT_GET=${_BM_SCREENSHOT_GET:=true}
@@ -218,7 +220,9 @@ Usage: ${0} [modifier(s)] command [option(s)]
 
 	-C		Print the color table (usefull for configuration)
 
-	-S		Show statistics about bookmarks/tags
+	-S		Show statistics about bookmarks/tags (and also configuration)
+			Options for -S
+			-p		Print the list of orphaned Pictures
 
 	Modifiers :
 	===========
@@ -262,7 +266,7 @@ EOF
 	$ bm view design
 	$ bm view
 
-	# clear all bookmarks
+	# clear all bookmarks (now deprecated). Use -d instead.
 	$ bm clear
 
 	Options:
@@ -491,6 +495,16 @@ delete_bookmark() {
 # Diplay some statistics about the bookmarks
 #
 stats() {
+	echo "===== Configuration ====="
+	echo "Bookmark file		: ${_BM_BOOKMARK_FILE}"
+	echo "Config file		: ${_BM_CONFIG_FILE}$([[ ! -e "${_BM_CONFIG_FILE}" ]] && echo " (but doesn't exist)")"
+	echo "Trash file		: ${_BM_DELETE_FILE}$([[ ! -e "${_BM_DELETE_FILE}" ]] && echo " (but doesn't exist)")"
+	echo "Screenshot directory	: ${_BM_SCREENSHOT_DIRECTORY}"
+	echo "Backup file(s)		: ${_BM_BOOKMARK_BACKUP_FILE}*"
+	for i in "${_BM_BOOKMARK_BACKUP_FILE}"*; do
+		echo "			  ${i}"
+	done
+	echo -e "\n=====  Statistics   ====="
 	readarray -t lines < "${_BM_BOOKMARK_FILE}"
 	echo "# of Bookmarks		: ${#lines[@]}"
 	echo "# of Duplicate		: $(awk -F'|' '$0 !~ /^[	 ]*#/ {print $1}' "${_BM_BOOKMARK_FILE}" |sort |uniq -d |wc -l)"
@@ -507,12 +521,13 @@ stats() {
 		done
 		echo ''
 	) | column -t -x -c 7
-	echo "# of Pictures		: $(ls -1 "${_BM_SCREENSHOT_DIRECTORY}"/* |wc -l)"
+	echo "# of Pictures		: $(ls -1 "${_BM_SCREENSHOT_DIRECTORY}"/*.png |wc -l) [# of files in ${_BM_SCREENSHOT_DIRECTORY}:$(ls -1 "${_BM_SCREENSHOT_DIRECTORY}"/* |wc -l)]"
 	echo "All Pictures size	: $(du -sh "${_BM_SCREENSHOT_DIRECTORY}" | awk '{print $1}')"
 	local orphaned="$( cd "${_BM_SCREENSHOT_DIRECTORY}" && for i in *; do [[ -z "$(sed -e '/'"${i%%.*}"'/!d' "${_BM_BOOKMARK_FILE}")" ]] && ((orph++)); done; echo "${orph:=0}" )"
 	local nopics="$( while read i; do [[ ! -f "${_BM_SCREENSHOT_DIRECTORY}/${i%%|*}.png" ]] && ((nopics++)); done <<< ${lines[@]}; echo "${nopics:=0}" )"
-	echo "Orphaned pictures	: ${orphaned}"
 	echo "Bookmark Without Pic	: ${nopics}"
+	echo "Orphaned pictures	: ${orphaned}"
+	[[ ${__p:=0} -eq 1 ]] && { echo -e "\n=====   Orphaned   ====="; echo "List of orphaned pictures :"; cd "${_BM_SCREENSHOT_DIRECTORY}" && for i in *; do [[ -z "$(sed -e '/'"${i%%.*}"'/!d' "${_BM_BOOKMARK_FILE}")" ]] && echo " - ${_BM_SCREENSHOT_DIRECTORY}/${i} [Trashed URL should be: $(awk -F'|' 'BEGIN{l="Unknown"} ($1 ~ /'"${i%%.*}"'/) {l=$3;} END {print l}' "${_BM_DELETE_FILE}")]"; done; };
 }
 
 #
@@ -759,8 +774,8 @@ if [[ ${1:-} =~ ${_regex} ]]; then
                 open) open_bookmark "${@:2}" ;;
                 add) __a=1; __url="${1:-}"; __T="${2:-}"; __t="${3:-}"; __A="${4:-}"; saveUrl; exit ;;
                 view) __r=1; __search="${@:2}" ;;
-		stats|statistics) show_statistics; exit ;;
-		clear) clear_bookmarks; exit ;;
+		stats|statistics) __S=1 ;;
+		clear) die "This now a deprecated feature. Use -d instead." ;;
 		colors) __C=1;;
 		help) usage 1;exit 0;;
 		version) echo -n "${0} v${VERSION}";exit 0;;

@@ -119,7 +119,9 @@ Usage: ./bm [modifier(s)] command [option(s)]
 
 	-C		Print the color table (usefull for configuration)
 
-	-S		Show statistics about bookmarks/tags
+	-S		Show statistics about bookmarks/tags (and also configuration)
+			Options for -S
+			-p		Print the list of orphaned Pictures
 
 	Modifiers :
 	===========
@@ -190,3 +192,44 @@ ae6461ffeb6cd8393c4c100d026db789|:sync|https://127.0.0.1:8384/|SyncThings Local|
 ```
 
 If you don't want to see some bookmarks, but want to keep them, you could comment them by adding a hash `#`.
+
+## Statistics
+
+bm provides you some statistics usage
+
+```
+$ bm -S -p
+
+===== Configuration =====
+Bookmark file           : /home/testuser/bm.lnk
+Config file             : /home/testuser/bm.conf (but doesn't exist)
+Trash file              : /home/testuser/.bm.trash
+Screenshot directory    : /home/testuser/.bm.shots
+Backup file(s)          : /home/testuser/.bm.lnk.bck*
+                          /home/testuser/.bm.lnk.bck.0
+                          /home/testuser/.bm.lnk.bck.1
+                          /home/testuser/.bm.lnk.bck.2
+
+=====  Statistics   =====
+# of Bookmarks          : 27
+# of Duplicate          : 0
+# of tags               : 26
+Top 14 tags used        :
+admin:8  color:7   bash:7     prompt:6    git:4  design:4  css:4
+box:4    system:3  network:3  ecryptfs:3  doc:3  rpi:2     lprab:2
+# of Pictures           : 34 [# of files in /home/testuser/.bm.shots:39]
+All Pictures size       : 27M
+Bookmark Without Pic    : 0
+Orphaned pictures       : 7
+
+=====   Orphaned   =====
+List of orphaned pictures :
+ - /home/testuser/.bm.shots/16d402a7f1be2304f90ec25924782edc.png [Trashed URL should be: https://github.com/Flyounet/bm]
+ - /home/testuser/.bm.shots/2981b5cae113491ddb18e0d51454f0d9.png [Trashed URL should be: ]
+ - /home/testuser/.bm.shots/7a3a43da3e8b8f58e5ade40eab35a1fd.png [Trashed URL should be: Unknown]
+ - /home/testuser/.bm.shots/7ad10b8decf3ef55ce4e8a95e80f4b9d.png [Trashed URL should be: Unknown]
+ - /home/testuser/.bm.shots/b88fe41f6aa05370e81bae926da2087c.png [Trashed URL should be: Unknown]
+ - /home/testuser/.bm.shots/bd8b3eff7fa82a0382a3e7576c5363b6.png [Trashed URL should be: ]
+ - /home/testuser/.bm.shots/c5c24b5609b0191095197d19d852eb1c.png [Trashed URL should be: http://toto]
+
+```
