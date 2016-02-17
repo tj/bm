@@ -2,9 +2,10 @@
 0.6.x / 2016-03-xx 
 ==================
 
-  * #17 : Add a Flag (-r) to open image stored for a link.
-  * #18 : Store a date for the screenshot taken.
-  * #19 : Add a Flag (-P) to take the screenshot for a specific link.
+  * Fix #17 : Add a Flag (-r) to open image stored for a link.
+  * Fix #18 : Store a date for the screenshot taken.
+  * Fix #19 : Add a Flag (-P) to take the screenshot for a specific link.
+  * Updated the function related to statistic to also include config info and orphaned pictures.
 
 0.5.3 / 2016-02-16
 ==================
