@@ -67,11 +67,16 @@ Usage: ./bm [modifier(s)] command [option(s)]
 	-l		List all URLs (default action, same thing as calling bm without args)
 			Options for -l
 			-z		Use the alternate print list
+			-n		Sort the results by date
+			-N		Sort the results by date  (reverse)
+
 
 	-s 'object'	Search for bookmarks
 			Options for -s
 			-i		Incensitive case search
 			-z		Use the alternate print list
+			-n		Sort the results by date
+			-N		Sort the results by date  (reverse)
 			Objects are
 				:string	Search in accelerator list
 				+string	Search in tags list
