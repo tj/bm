@@ -7,6 +7,8 @@
   accelerator, tags, Screenshots, configuration file, backup, and also
   generate a HTML file with bookmarks and Screenshots.
 
+  If you upgrade from a version prior to v0.6.0, read at the end.
+
   ![](http://cl.ly/FREx/Screen%20Shot%202012-03-29%20at%2011.15.14%20PM.png)
 
   Please note, BM needs some binaries to work see configuration to change them): 
@@ -195,6 +197,7 @@ ae6461ffeb6cd8393c4c100d026db789|:sync|https://127.0.0.1:8384/|SyncThings Local|
 7ad10b8decf3ef55ce4e8a95e80f4b9d|:home|http://flyounet.net/life|3615 my life|blog,home|2016-01-31T21:09:33Z
 7a3a43da3e8b8f58e5ade40eab35a1fd|:syntaxe|http://flyounet.net/life/2015-11-01-time-to-markdown.html|Syntaxe markdown|blog,home,markdown|2016-01-31T21:12:11Z
 ```
+Please note the above format is not used anymore since the v0.6.0. The date has been put as the second field of bookmark file.
 
 If you don't want to see some bookmarks, but want to keep them, you could comment them by adding a hash `#`.
 
@@ -238,3 +241,8 @@ List of orphaned pictures :
  - /home/testuser/.bm.shots/c5c24b5609b0191095197d19d852eb1c.png [Trashed URL should be: http://toto]
 
 ```
+
+## v0.6.0 and above...
+
+  The field's order has been changed. To use the v0.6.0, you have to execute the migration tool located in the `scripts` subdirectory.
+  It will modify your bookmark file for you (and do a backup first).

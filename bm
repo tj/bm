@@ -130,15 +130,6 @@ slug() {
 RELEASE='$Format:%h$'
 VERSION='0.6.0'
 
-
-# thumbs cache
-
-THUMBS=$DIR/bookmark-thumbs
-
-# HTML file
-
-HTML=/tmp/bm.html
-
 #
 # Output usage info
 #
