@@ -9,7 +9,9 @@ config() {
 	[[ "${__w:=$HOME}" != "${HOME}" ]] && echo "Working dir changed to ${__w}"
 	[[ "${__w: -1}" != '/' ]] && __w="${__w//\/\//\/}/"
 	# If a config file is given, we take it first, or look for a default config file
+	export _BM_CONFIG_FILE="${__w}${_BM_DEFAULT_CONFIG_FILENAME}"
 	if [ -f "$(readlink -m "${1:-}")" ]; then
+		export _BM_CONFIG_FILE="${1}"
 		. "${1}"
 	elif [ ${__n:=0} -eq 0 -a -f "${__w}${_BM_DEFAULT_CONFIG_FILENAME}" ]; then
 		. "${__w}${_BM_DEFAULT_CONFIG_FILENAME}"
@@ -40,6 +42,9 @@ config() {
 	# _BM_DELETE_TO_FILE : Allow or disallow the deleted URLs to be copied in the Trash (true or false)
 	export _BM_DELETE_TO_FILE=${_BM_DELETE_TO_FILE:=true}
 
+	# _BM_DELETE_PICTURE : Allow or disallow the picture associated to a URL to be deleted (true or false)
+	export _BM_DELETE_PICTURE=${_BM_DELETE_PICTURE:=true}
+
 	# _BM_DUPS_DETECT : Look for duplicates URL before insert in bookmark file (ovverided by -F)
 	export _BM_DUPS_DETECT=${_BM_DUPS_DETECT:=true}
 
@@ -50,7 +55,7 @@ config() {
 	export _BM_GET_PAGE_TITLE=${_BM_GET_PAGE_TITLE:=true}
 
 	# _BM_SCREENSHOT_DIRECTORY : Where to store the screenshot taken
-	export _BM_SCREENSHOT_DIRECTORY="${_BM_SCREENSHOT_DIRECTORY:=${__w}/.bm.shots}"
+	export _BM_SCREENSHOT_DIRECTORY="${_BM_SCREENSHOT_DIRECTORY:=${__w}.bm.shots}"
 
 	# _BM_SCREENSHOT_GET : When adding a URL try to take a screenshot in background
 	export _BM_SCREENSHOT_GET=${_BM_SCREENSHOT_GET:=true}
@@ -79,6 +84,7 @@ config() {
 	# I suppose the uname command is available
 	# Please note, the PRE & POST capture command will not be analyzes nor verified.
 	if [ "$(uname -s)" = 'Linux' ]; then
+		export _BM_CMD_IMAGE_OPEN='feh'
 		export _BM_CMD_OPEN='xdg-open'
 		export _BM_CMD_PRE_CAPTURE=''
 		export _BM_CMD_CAPTURE='cutycapt'
@@ -88,6 +94,7 @@ config() {
 		export _BM_CMD_COPY='xsel'
 	else
 		# To keep commpatibility with the Mac (even i don't have any)
+		export _BM_CMD_IMAGE_OPEN='open'
 		export _BM_CMD_OPEN='open'
 		export _BM_CMD_PRE_CAPTURE=''
 		export _BM_CMD_CAPTURE='webkit2png'
@@ -121,16 +128,7 @@ slug() {
 
 # version
 RELEASE='$Format:%h$'
-VERSION='0.5.3'
-
-
-# thumbs cache
-
-THUMBS=$DIR/bookmark-thumbs
-
-# HTML file
-
-HTML=/tmp/bm.html
+VERSION='0.6.0'
 
 #
 # Output usage info
@@ -146,26 +144,30 @@ Usage: ${0} [modifier(s)] command [option(s)]
 	==========
 	-h		Print this help
 	-H		Print help for legacy usage
-	-v/-V		Print the version
+	-v/-V		Print the version/And the short commit name
 	-a 'URL'	Add the URL to bookmark file
 			Options for -a
 			-t "TagList"	Tags are sparated by a comma ,
 			-T "Title"	Title for this URL (if empty and allowed Title
 					downloaded)
 			-A "accel"	Accelerator when search for URLs (start with Accel)
-					Default is FQDN without gTld (and www, and sheme)
+					Default is an autoincrement index
 			-F		Force the bookmark to be created (even if duplicate
 					or invalid)
-			-p		Force the screenshot to be taken
+			-p		Force the screenshot to be taken (config dependant)
 	
 	-l		List all URLs (default action, same thing as calling bm without args)
 			Options for -l
 			-z		Use the alternate print list
+			-n		Sort the results by date
+			-N		Sort the results by date  (reverse)
 
 	-s 'object'	Search for bookmarks
 			Options for -s
 			-i		Incensitive case search
 			-z		Use the alternate print list
+			-n		Sort the results by date
+			-N		Sort the results by date  (reverse)
 			Objects are
 				:string	Search in accelerator list
 				+string	Search in tags list
@@ -179,29 +181,51 @@ Usage: ${0} [modifier(s)] command [option(s)]
 			-O		If more than one answer force the first bookmark to be open
 			-Y		If more than one answer force ALL bookmarks to be open
 
+	-x 'object'	Search for bookmarks and copy it to clipboard (use the same argument as for -s)
+			Options for -x
+			-i		Incensitive case search
+			-X		If more than one answer force the first bookmark to be copied
+			-Y		If more than one answer force ALL bookmarks to be copied
+
+	-r 'object'	Search for bookmarks and Print the recorded associated picture (use the same argument as for -s)
+			Options for -r
+			-i		Incensitive case search
+			-O		If more than one answer force the first bookmark to have its picture printed
+			-Y		If more than one answer force ALL bookmarks to have their picture printed
+
 	-d 'URL' or	Delete the URL from bookmark file
 	   md5sum or
 	   'URL part'	Options for -d
 			-D		Delete first occurence only
 			-F		Force the bookmark to be deleted (even if duplicate)
+			-p		Delete the associated picture (no trash available)
 
 	-g		Generate a HTML page with all bookmarks
 			If used more than once, generate a page per tag
 			Options for -g
-			-G "filename"	If g==1 then generate then use this filename to generate page
+			-G "filename"	If g==1 then generate and use this filename to generate page
 			-O		Open the file when generated
+
+	-P 'object'	Generate all Non existant picture (check done for all URL in bm), if none argument.
+			If an argument is given (use the same argument as for -s) only the results will have a picture.
+			Options for -P
+			-F		Force the picture to be taken again (even if already exists).
 
 	-L		List all tags
 
 	-C		Print the color table (usefull for configuration)
 
-	-S		Show statistics about bookmarks/tags
+	-S		Show statistics about bookmarks/tags (and also configuration)
+			Options for -S
+			-p		Print the list of orphaned Pictures
 
 	Modifiers :
 	===========
 	-c 'file'	Use this configuration file instead of the default one
 
 	-b 'file'	Use this bookmark file instead of the default one
+
+	-w 'directory'	Use this directory to find default configuration file and bookmark file instead of the default one
 EOF
 	else
 		cat <<EOF
@@ -237,7 +261,7 @@ EOF
 	$ bm view design
 	$ bm view
 
-	# clear all bookmarks
+	# clear all bookmarks (now deprecated). Use -d instead.
 	$ bm clear
 
 	Options:
@@ -260,7 +284,7 @@ getAccelMax() {
 #	' "${_BM_BOOKMARK_FILE}"
 	while read a; do
 		(( ${a:=0} >= ${_max:=0} )) && (( _max=${a}+1 ))
-	done <<< "$( awk -F'|' '$0 !~ /^[ 	]*#/ && $2 ~ /^[:space:]*:[:space:]*[0-9]+[:space:]*$/ { sub(/:+/, "", $2); print $2; }' "${_BM_BOOKMARK_FILE}")"
+	done <<< "$( awk -F'|' '$0 !~ /^[ 	]*#/ && $3 ~ /^[:space:]*:[:space:]*[0-9]+[:space:]*$/ { sub(/:+/, "", $3); print $3; }' "${_BM_BOOKMARK_FILE}")"
 	echo -n "${_max}"
 }
 
@@ -299,7 +323,7 @@ saveUrl() {
 	[[ -z "${__t:=}" ]] && __t='default'			# Default tag is default
 	[[ -z "${__A:=}" ]] && __A="$(getAccelMax)"
 	[[ "${__A:0:1}" != ':' ]] && __A=":${__A}"		# If no accel => Add a number
-	echo "${_sum%% *}|${__A}|${__url}|${__T}|${__t}|$(date '+%FT%TZ')" >> "${_BM_BOOKMARK_FILE}" || die "Insert aborted into '${_BM_BOOKMARK_FILE}' !"
+	echo "${_sum%% *}|$(date '+%FT%TZ')|${__A}|${__url}|${__T}|${__t}" >> "${_BM_BOOKMARK_FILE}" || die "Insert aborted into '${_BM_BOOKMARK_FILE}' !"
 	echo "${__url} inserted into '${_BM_BOOKMARK_FILE}'"
 	[[ ! -f "${_BM_SCREENSHOT_DIRECTORY}/${_sum%% *}.png" || ${__F:=0} -eq 1 ]] && { screenshot_take "${_BM_SCREENSHOT_DIRECTORY}/${_sum%% *}.png" "${__url}" & }
 	[[ ${_BM_SCREENSHOT_WAIT} = true ]] && wait
@@ -312,7 +336,7 @@ saveUrl() {
 
 readLines() {
 	IFS='|'
-	while read m a u T t d; do
+	while read m d a u T t; do
 		_line="${_BM_PRINT_LINE}"
 		[[ ${__z:=0} -eq 1 ]] && _line="${_BM_PRINT_LINE_ALTERNATIVE}"
 		_line="${_line//BM_MD5/$m}"
@@ -324,7 +348,7 @@ readLines() {
 		_line="${_line//BM_TAGS/$t}"
 		_line="${_line//BM_ACCEL/${a:=No-Accelerator}}"
 		_line="${_line//BM_DATE/${d}}"
-		local _pict="$(stat -c '%y' "${_BM_SCREENSHOT_DIRECTORY}/${m}.png")"
+		local _pict="$(stat -c '%y' "${_BM_SCREENSHOT_DIRECTORY}/${m}.png" 2>/dev/null)"
 		[[ ! -z "${_pict}" ]] && _pict="$(date '+%FT%TZ' --date "${_pict}")"
 		_line="${_line//BM_PICTURE/${_pict:=None}}"
 		echo -e "${_line}\n"
@@ -336,6 +360,8 @@ readLines() {
 #
 
 list_bookmarks() {
+	[[ ${__n:=0} -eq 1 ]] && { awk '$0 !~ /^[ 	]*#/' "${_BM_BOOKMARK_FILE}" | sort -t'|' -k2 | readLines; return; }
+	[[ ${__N:=0} -eq 1 ]] && { awk '$0 !~ /^[ 	]*#/' "${_BM_BOOKMARK_FILE}" | sort -t'|' -k2 -r | readLines; return; }
 	awk '$0 !~ /^[ 	]*#/' "${_BM_BOOKMARK_FILE}" | readLines
 }
 
@@ -346,10 +372,10 @@ search() {
 	local _s=''
 	[[ -z "${1:-}" ]] && list_bookmarks && return
 	case "${1:0:1}" in
-		:) _s=2; _ss=0 ;; # Accelerator
-		+) _s=5; _ss=1 ;; # Tags
+		:) _s=3; _ss=0 ;; # Accelerator
+		+) _s=6; _ss=1 ;; # Tags
 		=) _s=1; _ss=1 ;; # MD5 part
-		/) _s=3; _ss=1 ;; # URL part
+		/) _s=4; _ss=1 ;; # URL part
 		*) _s=0; _ss=0 ;; # full text search
 	esac
 	[[ ${_BM_SEARCH_IGNORECASE} = true || ${__i:=0} -eq 1 ]] && local _ign=1
@@ -362,12 +388,36 @@ search() {
 
 }
 search_bookmarks() {
+	[[ ${__n:=0} -eq 1 ]] && { search "${@}" | sort -t'|' -k2 | readLines; return; }
+	[[ ${__N:=0} -eq 1 ]] && { search "${@}" | sort -t'|' -k2 -r | readLines; return; }
 	search "${@}" | readLines
 }
 
 #
 # Open first bookmark matching <query>
 #
+
+recorded_picture() {
+	local _lines="$(search "${@}")"
+	if [ ${_BM_ASK_BEFORE_OPEN} = true -a ${__O:=0} -eq 0 -a ${__Y:=0} -eq 0 ]; then
+		if [ $(wc -l <<< "${_lines}") -gt 1 ]; then
+			read -p"More than one URL found. Open all Pictures ? [Y/N] : " -n1 _answer
+			[[ "${_answer,,}" != 'y' ]] && die "\nUse -O to force the first URL or refine your search"
+		fi
+	fi
+	local _all=''
+	echo ''
+	while read _nl; do
+		readLines <<< "${_nl}"
+		if [ ${_BM_OPEN_ALL} = true -o ${__Y:=0} -eq 1 ]; then
+			_all="${_BM_SCREENSHOT_DIRECTORY}/$(awk -F'|' '{print $1}' <<< "${_nl}").png ${_all}"
+		else
+			"${_BM_CMD_IMAGE_OPEN}" "${_BM_SCREENSHOT_DIRECTORY}/$(awk -F'|' '{print $1}' <<< "${_nl}").png"
+			[[ ${_BM_OPEN_FIRST} = true || ${__O:=0} -eq 1 ]] && exit 0
+		fi
+	done <<< "$(echo -e "${_lines}")"
+	[[ ${_BM_OPEN_ALL} = true || ${__Y:=0} -eq 1 ]]	&& "${_BM_CMD_IMAGE_OPEN}" "${_all}"
+}
 
 open_bookmark() {
 	local _lines="$(search "${@}")"
@@ -381,9 +431,9 @@ open_bookmark() {
 	while read _nl; do
 		readLines <<< "${_nl}"
 		if [ ${_BM_OPEN_ALL} = true -o ${__Y:=0} -eq 1 ]; then
-			_all="$(awk -F'|' '{print $3}' <<< "${_nl}") ${_all}"
+			_all="$(awk -F'|' '{print $4}' <<< "${_nl}") ${_all}"
 		else
-			"${_BM_CMD_OPEN}" "$(awk -F'|' '{print $3}' <<< "${_nl}")"
+			"${_BM_CMD_OPEN}" "$(awk -F'|' '{print $4}' <<< "${_nl}")"
 			[[ ${_BM_OPEN_FIRST} = true || ${__O:=0} -eq 1 ]] && exit 0
 		fi
 	done <<< "$(echo -e "${_lines}")"
@@ -402,10 +452,10 @@ copy_bookmark() {
 	while read _nl; do
 		readLines <<< "${_nl}"
 		if [ ${_BM_OPEN_ALL} = true -o ${__Y:=0} -eq 1 ]; then
-			_all="$(awk -F'|' '{print $3}' <<< "${_nl}") ${_all}"
+			_all="$(awk -F'|' '{print $4}' <<< "${_nl}") ${_all}"
 		else
-			awk -F'|' '{print $3}' <<< "${_nl}" | "${_BM_CMD_COPY}"
-			awk -F'|' '{print $3}' <<< "${_nl}" | "${_BM_CMD_COPY}" -b
+			awk -F'|' '{print $4}' <<< "${_nl}" | "${_BM_CMD_COPY}"
+			awk -F'|' '{print $4}' <<< "${_nl}" | "${_BM_CMD_COPY}" -b
 			[[ ${_BM_OPEN_FIRST} = true || ${__X:=0} -eq 1 ]] && exit 0
 		fi
 	done <<< "$(echo -e "${_lines}")"
@@ -431,6 +481,7 @@ delete_bookmark() {
 			if [ ${_BM_DELETE_TO_FILE} = true -o ${__D:=0} -eq 1 ]; then
 				echo "${_nl}" >> "${_BM_DELETE_FILE}"
 			fi
+			[[ ${_BM_DELETE_PICTURE} = true || ${__p:=0} -eq 1 ]] && rm -f -- "${_BM_SCREENSHOT_DIRECTORY}/${_nl%%|*}.png"
 			_nl="${_nl//\|/\\|}"
 			sed -i -e '/'"${_nl//\//\\/}"'/d' "${_BM_BOOKMARK_FILE}"
 		done <<< "$(echo -e "${_lines}")"
@@ -443,10 +494,20 @@ delete_bookmark() {
 # Diplay some statistics about the bookmarks
 #
 stats() {
+	echo "===== Configuration ====="
+	echo "Bookmark file		: ${_BM_BOOKMARK_FILE}"
+	echo "Config file		: ${_BM_CONFIG_FILE}$([[ ! -e "${_BM_CONFIG_FILE}" ]] && echo " (but doesn't exist)")"
+	echo "Trash file		: ${_BM_DELETE_FILE}$([[ ! -e "${_BM_DELETE_FILE}" ]] && echo " (but doesn't exist)")"
+	echo "Screenshot directory	: ${_BM_SCREENSHOT_DIRECTORY}"
+	echo "Backup file(s)		: ${_BM_BOOKMARK_BACKUP_FILE}*"
+	for i in "${_BM_BOOKMARK_BACKUP_FILE}"*; do
+		echo "			  ${i}"
+	done
+	echo -e "\n=====  Statistics   ====="
 	readarray -t lines < "${_BM_BOOKMARK_FILE}"
 	echo "# of Bookmarks		: ${#lines[@]}"
 	echo "# of Duplicate		: $(awk -F'|' '$0 !~ /^[	 ]*#/ {print $1}' "${_BM_BOOKMARK_FILE}" |sort |uniq -d |wc -l)"
-	local tags="$(awk -F'|' '$0 !~ /^[ 	]*#/ {print $5}' "${_BM_BOOKMARK_FILE}" | sed -e 's/\([[:space:]]*,[[:space:]]*\)/\n/g')"
+	local tags="$(awk -F'|' '$0 !~ /^[ 	]*#/ {print $6}' "${_BM_BOOKMARK_FILE}" | sed -e 's/\([[:space:]]*,[[:space:]]*\)/\n/g')"
 
 	echo "# of tags		: $( sort -u <<< "${tags,,}" |wc -l)"
 	echo "Top 14 tags used	:"
@@ -459,12 +520,13 @@ stats() {
 		done
 		echo ''
 	) | column -t -x -c 7
-	echo "# of Pictures		: $(ls -1 "${_BM_SCREENSHOT_DIRECTORY}"/* |wc -l)"
+	echo "# of Pictures		: $(ls -1 "${_BM_SCREENSHOT_DIRECTORY}"/*.png |wc -l) [# of files in ${_BM_SCREENSHOT_DIRECTORY}:$(ls -1 "${_BM_SCREENSHOT_DIRECTORY}"/* |wc -l)]"
 	echo "All Pictures size	: $(du -sh "${_BM_SCREENSHOT_DIRECTORY}" | awk '{print $1}')"
 	local orphaned="$( cd "${_BM_SCREENSHOT_DIRECTORY}" && for i in *; do [[ -z "$(sed -e '/'"${i%%.*}"'/!d' "${_BM_BOOKMARK_FILE}")" ]] && ((orph++)); done; echo "${orph:=0}" )"
 	local nopics="$( while read i; do [[ ! -f "${_BM_SCREENSHOT_DIRECTORY}/${i%%|*}.png" ]] && ((nopics++)); done <<< ${lines[@]}; echo "${nopics:=0}" )"
-	echo "Orphaned pictures	: ${orphaned}"
 	echo "Bookmark Without Pic	: ${nopics}"
+	echo "Orphaned pictures	: ${orphaned}"
+	[[ ${__p:=0} -eq 1 ]] && { echo -e "\n=====   Orphaned   ====="; echo "List of orphaned pictures :"; cd "${_BM_SCREENSHOT_DIRECTORY}" && for i in *; do [[ -z "$(sed -e '/'"${i%%.*}"'/!d' "${_BM_BOOKMARK_FILE}")" ]] && echo " - ${_BM_SCREENSHOT_DIRECTORY}/${i} [Trashed URL should be: $(awk -F'|' 'BEGIN{l="Unknown"} ($1 ~ /'"${i%%.*}"'/) {l=$4;} END {print l}' "${_BM_DELETE_FILE}")]"; done; };
 }
 
 #
@@ -472,7 +534,7 @@ stats() {
 #
 
 list_tags() {
-	local tags="$(awk -F'|' '$0 !~ /^[ 	]*#/ {print $5}' "${_BM_BOOKMARK_FILE}" | sed -e 's/\([[:space:]]*,[[:space:]]*\)/\n/g')"
+	local tags="$(awk -F'|' '$0 !~ /^[ 	]*#/ {print $6}' "${_BM_BOOKMARK_FILE}" | sed -e 's/\([[:space:]]*,[[:space:]]*\)/\n/g')"
 	local nli=0
 	(
 		sort <<< "${tags,,}" | uniq -c | sort -nr | while read n t; do
@@ -569,16 +631,38 @@ screenshot_take() {
 		[[ ! -z "${_BM_CMD_PRE_CAPTURE}" ]] && { local _pre="${_BM_CMD_PRE_CAPTURE//\{FILE\}/${1}}"; _pre="${_pre//\{URL\}/${2}}"; ${_pre} ; }
 		local _cmd="${_BM_CMD_CAPTURE//\{FILE\}/${1}}"; _cmd="${_cmd//\{URL\}/${2}}";
 		local _args="${_BM_CMD_CAPTURE_ARGS//\{FILE\}/${1}}"; _args="${_args//\{URL\}/${2}}";
-		${_cmd} ${_args}
+		eval ${_cmd} ${_args}
 		[[ ! -z "${_BM_CMD_POST_CAPTURE}" ]] && { local _post="${_BM_CMD_POST_CAPTURE//\{FILE\}/${1}}"; _post="${_post//\{URL\}/${2}}"; ${_post} ; }
 	fi
 }
 
 picturize() {
-	awk -F'|' '$0 !~ /^[  ]*#/ {print $1,$3;}' "${_BM_BOOKMARK_FILE}" | while read m u; do
-		[[ ! -f "${_BM_SCREENSHOT_DIRECTORY}/${m}.png" || ${__F:=0} -eq 1 ]] && { screenshot_take "${_BM_SCREENSHOT_DIRECTORY}/${m}.png" "${u}" & }
-		[[ ${_BM_SCREENSHOT_WAIT} = true ]] && wait
-	done
+	if [ -z "${1:-}" ]; then
+		awk -F'|' '$0 !~ /^[  ]*#/ {print $1,$4;}' "${_BM_BOOKMARK_FILE}" | while read m u; do
+			[[ ! -f "${_BM_SCREENSHOT_DIRECTORY}/${m}.png" || ${__F:=0} -eq 1 ]] && { screenshot_take "${_BM_SCREENSHOT_DIRECTORY}/${m}.png" "${u}" & }
+			[[ ${_BM_SCREENSHOT_WAIT} = true ]] && wait
+		done
+	else
+		local _lines="$(search "${@}")"
+		if [ ${_BM_ASK_BEFORE_OPEN} = true -a ${__O:=0} -eq 0 -a ${__Y:=0} -eq 0 ]; then
+			if [ $(wc -l <<< "${_lines}") -gt 1 ]; then
+				read -p"More than one URL found. Open all ? [Y/N] : " -n1 _answer
+				[[ "${_answer,,}" != 'y' ]] && die "\nUse -O to force the first URL or refine your search"
+			fi
+		fi
+		local _all=''
+		while read _nl; do
+			readLines <<< "${_nl}"
+			if [ ${_BM_OPEN_ALL} = true -o ${__Y:=0} -eq 1 ]; then
+				IFS='|' read m a u b  <<< "${_nl}"
+				screenshot_take "${_BM_SCREENSHOT_DIRECTORY}/${m}.png" "${u}" &
+			else
+				IFS='|' read m a u b  <<< "${_nl}"
+				screenshot_take "${_BM_SCREENSHOT_DIRECTORY}/${m}.png" "${u}" &
+				[[ ${_BM_OPEN_FIRST} = true || ${__O:=0} -eq 1 ]] && exit 0
+			fi
+		done <<< "$(echo -e "${_lines}")"
+	fi
 }
 
 bookmark_generator() {
@@ -587,7 +671,7 @@ bookmark_generator() {
 	style >> "${1:-${_BM_HTML_FILE}}"
 	echo "</head><body>" >> "${1:-${_BM_HTML_FILE}}"
 #	search "${2:-}" | while IFS='|' read m a u T t d; do
-	awk '$0 !~ /^[  ]*#/' "${_BM_BOOKMARK_FILE}" | while IFS='|' read m a u T t d; do
+	awk '$0 !~ /^[  ]*#/' "${_BM_BOOKMARK_FILE}" | while IFS='|' read m d a u T t; do
 	echo "	<div class=bm>
 		<a href='${u}'><img src='${_BM_SCREENSHOT_DIRECTORY}/${m}.png' alt='${u}' /></a>
 		<p>${T}<br/><a href='${_BM_SCREENSHOT_DIRECTORY}/${m}.png'>View image</a></p>
@@ -688,9 +772,9 @@ if [[ ${1:-} =~ ${_regex} ]]; then
                 search) __s=1; __search="${@:2}" ;;
                 open) open_bookmark "${@:2}" ;;
                 add) __a=1; __url="${1:-}"; __T="${2:-}"; __t="${3:-}"; __A="${4:-}"; saveUrl; exit ;;
-                view) view_bookmark_screenshots "${:1}"; exit ;;
-		stats|statistics) show_statistics; exit ;;
-		clear) clear_bookmarks; exit ;;
+                view) __r=1; __search="${@:2}" ;;
+		stats|statistics) __S=1 ;;
+		clear) die "This now a deprecated feature. Use -d instead." ;;
 		colors) __C=1;;
 		help) usage 1;exit 0;;
 		version) echo -n "${0} v${VERSION}";exit 0;;
@@ -720,9 +804,9 @@ else
 # -g generate html file
 # -G use this file
 # -g -g generate 1 file per tags
-        # used      : Aa-bCcDd--F-GgHh-i----Ll----OoPp----SsTt--Vv-w--Y--z----------
-        # available : --B-----Ee-f----I-JjKk--MmNn----QqRr----Uu--W-Xx-yZ-0123456789
-	while getopts ":a:A:b:c:d:G:o:s:t:T:w:x:CDFghHilLOpPSvVXYz" option; do
+        # used      : Aa-bCcDd--F-GgHh-i----Ll--NnOoPp---rSsTt--Vv-wXxY--z----------
+        # available : --B-----Ee-f----I-JjKk--Mm------QqR-----Uu--W----yZ-0123456789
+	while getopts ":a:A:b:c:d:G:o:P:r:s:t:T:w:x:CDFghHilLnNOpPSvVXYz" option; do
 		case ${option} in
 			a) __a=1; __url="${OPTARG}";;	# Add url to bookmark
 			A) __A="${OPTARG}";;	# AcceleratoR
@@ -731,7 +815,7 @@ else
 			C) __C=1;;		# Print color table
 			d) __d=1; __del="${OPTARG}";;	# Config file
 			D) __D=1;;		# Print color table
-			F) __F=1;;		# Force the add or delete
+			F) __F=1;;		# Force the add or delete or picture
 			g) (( __g++ ));;	# generate html file(s)
 			G) __G=1; __file="${OPTARG}";;	# Generate this file (only for g=1)
 			h) usage; exit 0;;	# Help
@@ -739,10 +823,13 @@ else
 			i) __i=1;;		# Ignore case when searching
 			l) __l=1;;		# List all bookmarks
 			L) __L=1;;		# List all tags
+			n) __n=1;;		# sort by date
+			N) __N=1;;		# sort by date (reverse)
 			o) __o=1; __open="${OPTARG}";;	# Open
 			O) __O=1;;		# Open First
 			p) __p=1;;		# Take a screenshot
-			P) __P=1;;		# Take all screenshot
+			P) __P=1; __search="${OPTARG}";;		# Take all screenshot
+			r) __r=1; __search="${OPTARG}";;	# Search
 			s) __s=1; __search="${OPTARG}";;	# Search
 			S) __S=1;;		# Print Statistics
 			t) __t="${OPTARG}";;	# tags for a URL
@@ -778,16 +865,16 @@ config "${__c}"
 # If no bookmark file exist, create one if allowed
 if [ ! -f "${_BM_BOOKMARK_FILE}" -a ${_BM_CREATE_BOOKMARK_FILE} = true ]; then
 	# Remember fields : 1=md5, 2=accel, 3=url, 4=title, 5=tags, 6=date of bookmark
-	echo "bd8b3eff7fa82a0382a3e7576c5363b6|:bm|https://github.com/Flyounet/bm/|bm a cool enhanced bookmark tool for your console|default,shell|$(date '+%FT%TZ')" >> "${_BM_BOOKMARK_FILE}"
-	echo "2981b5cae113491ddb18e0d51454f0d9|:bmtj|https://github.com/tj/bm/|The original bm : a cool bookmark tool for your console|default,shell|$(date '+%FT%TZ')" >> "${_BM_BOOKMARK_FILE}"
+	echo "bd8b3eff7fa82a0382a3e7576c5363b6|$(date '+%FT%TZ')|:bm|https://github.com/Flyounet/bm/|bm a cool enhanced bookmark tool for your console|default,shell" >> "${_BM_BOOKMARK_FILE}"
+	echo "2981b5cae113491ddb18e0d51454f0d9|$(date '+%FT%TZ')|:bmtj|https://github.com/tj/bm/|The original bm : a cool bookmark tool for your console|default,shell" >> "${_BM_BOOKMARK_FILE}"
 fi
 
 # Starting to work with args. If none probably list...
 [[ ${#} -eq 0 && ${_BM_NO_ARGS_FORCE_HELP} = true ]] && { usage ; exit; }
 
 # Only one action at a time
-if [ $(( ${__a:=0} + ${__C:=0} + ${__d:=0} + ${__g:=0} + ${__l:=0} + ${__L:=0} + ${__o:=0} + ${__P:=0} + ${__s:=0} + ${__S:=0} + ${__x:=0} )) -gt 1 ]; then
-        echo "You have to choose between -a, -C, -d, -g, -l, -L, -o, -P, -s, -S, -x" >&2
+if [ $(( ${__a:=0} + ${__C:=0} + ${__d:=0} + ${__g:=0} + ${__l:=0} + ${__L:=0} + ${__o:=0} + ${__P:=0} + ${__r:=0} + ${__s:=0} + ${__S:=0} + ${__x:=0} )) -gt 1 ]; then
+        echo "You have to choose between -a, -C, -d, -g, -l, -L, -o, -P, -r, -s, -S, -x" >&2
         echo "Use -h for help" >&2
 	exit 0
 fi
@@ -805,10 +892,11 @@ fi
 [[ ${__l} -eq 1 ]] && { search ; exit; }
 [[ ${__L} -eq 1 ]] && { list_tags ; exit; }
 [[ ${__o} -eq 1 ]] && { open_bookmark "${__open}" ; exit; }
-[[ ${__P} -eq 1 ]] && { picturize ; exit; }
-[[ ${__x} -eq 1 ]] && { copy_bookmark "${__copy}" ; exit; }
+[[ ${__P} -eq 1 ]] && { picturize "${__search}" ; exit; }
+[[ ${__r} -eq 1 ]] && { recorded_picture "${__search}" ; exit; }
 [[ ${__s} -eq 1 ]] && { search_bookmarks "${__search}" ; exit; }
 [[ ${__S} -eq 1 ]] && { stats ; exit; }
+[[ ${__x} -eq 1 ]] && { copy_bookmark "${__copy}" ; exit; }
 search
 
 # $Format:%cn @ %cD$ : $Id$

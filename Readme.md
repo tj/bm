@@ -7,20 +7,22 @@
   accelerator, tags, Screenshots, configuration file, backup, and also
   generate a HTML file with bookmarks and Screenshots.
 
+  If you upgrade from a version prior to v0.6.0, read at the end.
+
   ![](http://cl.ly/FREx/Screen%20Shot%202012-03-29%20at%2011.15.14%20PM.png)
 
   Please note, BM needs some binaries to work see configuration to change them): 
 
-    * For the Screenshot part:
-    * * `cutycapt` for Linux
-    * * `webkit2png` for Mac.
-    * For the clipboard copy:
-    * * `xsel` for Linux
-    * * As I don't have any Mac, nothing for the time being.
-    * For the md5 part:
-    * * `md5sum` for Linux
-    * * `md5` for Mac.
-    * Other tools: `sed`, `awk`, `date`, `iconv`, `cat`, `curl`, `column` and `bash`
+  * For the Screenshot part:
+  * - `cutycapt` for Linux
+  * - `webkit2png` for Mac.
+  * For the clipboard copy:
+  * - `xsel` for Linux
+  * - As I don't have any Mac, nothing for the time being.
+  * For the md5 part:
+  * - `md5sum` for Linux
+  * - `md5` for Mac.
+  * Other tools: `sed`, `awk`, `date`, `iconv`, `cat`, `curl`, `column` and `bash`
 
 ## Install
 
@@ -67,11 +69,16 @@ Usage: ./bm [modifier(s)] command [option(s)]
 	-l		List all URLs (default action, same thing as calling bm without args)
 			Options for -l
 			-z		Use the alternate print list
+			-n		Sort the results by date
+			-N		Sort the results by date  (reverse)
+
 
 	-s 'object'	Search for bookmarks
 			Options for -s
 			-i		Incensitive case search
 			-z		Use the alternate print list
+			-n		Sort the results by date
+			-N		Sort the results by date  (reverse)
 			Objects are
 				:string	Search in accelerator list
 				+string	Search in tags list
@@ -102,6 +109,7 @@ Usage: ./bm [modifier(s)] command [option(s)]
 	   'URL part'	Options for -d
 			-D		Delete first occurence only
 			-F		Force the bookmark to be deleted (even if duplicate)
+			-p		Delete the associated picture (no trash available)
 
 	-g		Generate a HTML page with all bookmarks
 			If used more than once, generate a page per tag
@@ -118,7 +126,9 @@ Usage: ./bm [modifier(s)] command [option(s)]
 
 	-C		Print the color table (usefull for configuration)
 
-	-S		Show statistics about bookmarks/tags
+	-S		Show statistics about bookmarks/tags (and also configuration)
+			Options for -S
+			-p		Print the list of orphaned Pictures
 
 	Modifiers :
 	===========
@@ -187,5 +197,52 @@ ae6461ffeb6cd8393c4c100d026db789|:sync|https://127.0.0.1:8384/|SyncThings Local|
 7ad10b8decf3ef55ce4e8a95e80f4b9d|:home|http://flyounet.net/life|3615 my life|blog,home|2016-01-31T21:09:33Z
 7a3a43da3e8b8f58e5ade40eab35a1fd|:syntaxe|http://flyounet.net/life/2015-11-01-time-to-markdown.html|Syntaxe markdown|blog,home,markdown|2016-01-31T21:12:11Z
 ```
+Please note the above format is not used anymore since the v0.6.0. The date has been put as the second field of bookmark file.
 
 If you don't want to see some bookmarks, but want to keep them, you could comment them by adding a hash `#`.
+
+## Statistics
+
+bm provides you some statistics usage
+
+```
+$ bm -S -p
+
+===== Configuration =====
+Bookmark file           : /home/testuser/bm.lnk
+Config file             : /home/testuser/bm.conf (but doesn't exist)
+Trash file              : /home/testuser/.bm.trash
+Screenshot directory    : /home/testuser/.bm.shots
+Backup file(s)          : /home/testuser/.bm.lnk.bck*
+                          /home/testuser/.bm.lnk.bck.0
+                          /home/testuser/.bm.lnk.bck.1
+                          /home/testuser/.bm.lnk.bck.2
+
+=====  Statistics   =====
+# of Bookmarks          : 27
+# of Duplicate          : 0
+# of tags               : 26
+Top 14 tags used        :
+admin:8  color:7   bash:7     prompt:6    git:4  design:4  css:4
+box:4    system:3  network:3  ecryptfs:3  doc:3  rpi:2     lprab:2
+# of Pictures           : 34 [# of files in /home/testuser/.bm.shots:39]
+All Pictures size       : 27M
+Bookmark Without Pic    : 0
+Orphaned pictures       : 7
+
+=====   Orphaned   =====
+List of orphaned pictures :
+ - /home/testuser/.bm.shots/16d402a7f1be2304f90ec25924782edc.png [Trashed URL should be: https://github.com/Flyounet/bm]
+ - /home/testuser/.bm.shots/2981b5cae113491ddb18e0d51454f0d9.png [Trashed URL should be: ]
+ - /home/testuser/.bm.shots/7a3a43da3e8b8f58e5ade40eab35a1fd.png [Trashed URL should be: Unknown]
+ - /home/testuser/.bm.shots/7ad10b8decf3ef55ce4e8a95e80f4b9d.png [Trashed URL should be: Unknown]
+ - /home/testuser/.bm.shots/b88fe41f6aa05370e81bae926da2087c.png [Trashed URL should be: Unknown]
+ - /home/testuser/.bm.shots/bd8b3eff7fa82a0382a3e7576c5363b6.png [Trashed URL should be: ]
+ - /home/testuser/.bm.shots/c5c24b5609b0191095197d19d852eb1c.png [Trashed URL should be: http://toto]
+
+```
+
+## v0.6.0 and above...
+
+  The field's order has been changed. To use the v0.6.0, you have to execute the migration tool located in the `scripts` subdirectory.
+  It will modify your bookmark file for you (and do a backup first).

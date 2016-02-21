@@ -1,12 +1,16 @@
 
-0.6.x / 2016-03-xx 
+0.6.0 / 2016-02-21 
 ==================
 
-  * #17 : Add a Flag to open image stored for a link.
-  * #18 : Store a date for the screenshot taken.
-  * #19 : Add a Flag to take the screenshot for a specific link.
+  * Fields order is now modified. Date is now the second field instead of last.
+  * 2 scripts are present to migrate from tj/bm and fromo Flyounet/bm to the v0.6.0.
+  * Fix #17 : Add a Flag (-r) to open image stored for a link.
+  * Fix #18 : Store a date for the screenshot taken.
+  * Fix #19 : Add a Flag (-P) to take the screenshot for a specific link.
+  * Updated the function related to statistic to also include config info and orphaned pictures.
+  * Added 2 Flags -n (-N) to sort results by date (reverse)
 
-0.5.3 / 2016-02-xx
+0.5.3 / 2016-02-16
 ==================
 
   * Documentation update
