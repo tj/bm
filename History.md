@@ -1,5 +1,5 @@
 
-0.6.0 / 2016-02-xx 
+0.6.0 / 2016-02-21 
 ==================
 
   * Fields order is now modified. Date is now the second field instead of last.
