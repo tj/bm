@@ -246,3 +246,9 @@ List of orphaned pictures :
 
   The field's order has been changed. To use the v0.6.0, you have to execute the migration tool located in the `scripts` subdirectory.
   It will modify your bookmark file for you (and do a backup first).
+
+## Licenses
+
+  * WTFPL : do What The Fuck you Want to Public License
+  * DSSL  : Demerden Sie Sich License
+

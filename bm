@@ -1,5 +1,29 @@
 #!/usr/bin/env bash
 
+# /*------------------------------------------------------------------------*\
+# |                                                                          |
+# |                WTFPL & DSSL apply on this material.                      |
+# |                                                                          |
+# +--------------------------------------------------------------------------+
+# |                                                                          |
+# | bm : A Bash CLI bookmark manager                                         |
+# | Copyright (C) 2012 TJ Holowaychuk — Tous droits réservés.                |
+# | Copyright (C) 2016 Flyounet — Tous droits réservés.                      |
+# |                                                                          |
+# | Cette œuvre est distribuée SANS AUCUNE GARANTIE hormis celle d'être      |
+# | distribuée sous les termes de la Licence Demerdez-vous («Demerden Sie    |
+# | Sich License») telle que publiée par Flyounet : soit la version 1 de     |
+# | cette licence,soit (à votre gré) toute version ultérieure.               |
+# | telle que publiée par Flyounet : soit la version 1 de cette licence,     |
+# | soit (à votre gré) toute version ultérieure.                             |
+# |                                                                          |
+# | Vous devriez avoir reçu une copie de la Licence Démerdez-vous avec cette |
+# | œuvre ; si ce n’est pas le cas, consultez :                              |
+# | <http://dssl.flyounet.net/licenses/>.                                    |
+# |                                                                          |
+# \*------------------------------------------------------------------------*/
+
+
 # default filename for Baker config file (just the filename no path)
 readonly _BM_DEFAULT_CONFIG_FILENAME="${_BM_DEFAULT_CONFIG_FILENAME:=bm.conf}"
 
