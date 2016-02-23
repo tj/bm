@@ -1,4 +1,11 @@
 
+0.6.1 / 2016-02-23 
+==================
+
+  * Adding permissive licenses :
+  * - WTFPL : do What The Fuck you Want to Public License
+  * - DSSL  : Demerden Sie Sich License
+
 0.6.0 / 2016-02-21 
 ==================
 
