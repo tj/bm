@@ -34,7 +34,10 @@ config() {
 	[[ "${__w: -1}" != '/' ]] && __w="${__w//\/\//\/}/"
 	# If a config file is given, we take it first, or look for a default config file
 	export _BM_CONFIG_FILE="${__w}${_BM_DEFAULT_CONFIG_FILENAME}"
-	if [ -f "$(readlink -m "${1:-}")" ]; then
+	if [ "$(uname -s)" = 'Linux' -a -f "$(readlink -m "${1:-}" 2>/dev/null)" ]; then
+		export _BM_CONFIG_FILE="${1}"
+		. "${1}"
+	elif [ -e "${1}" ]; then
 		export _BM_CONFIG_FILE="${1}"
 		. "${1}"
 	elif [ ${__n:=0} -eq 0 -a -f "${__w}${_BM_DEFAULT_CONFIG_FILENAME}" ]; then
