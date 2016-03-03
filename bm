@@ -152,7 +152,7 @@ slug() {
 
 # version
 RELEASE='$Format:%h$'
-VERSION='0.6.0'
+VERSION='0.6.2'
 
 #
 # Output usage info
@@ -339,7 +339,7 @@ saveUrl() {
 		fi
 	fi
 	if [ ${_BM_GET_PAGE_TITLE} = true -a -z "${__T:=}" ]; then
-		__T="$( curl -ks "${__url}" 2>&1 | sed '/<title>/I!d;/<\/title>/I!d;s;^[[:space:]]*<title>\([^<]*\)<.*;\1;i' )"
+		__T="$( curl -Lks "${__url}" 2>&1 | sed '/<title>/I!d;/<\/title>/I!d;s;^[[:space:]]*<title>\([^<]*\)<.*;\1;i' )"
 	fi
 	[[ ! -z "${__T:=}" ]] && __T="${__T//\|/\\|}"
 	backupBm

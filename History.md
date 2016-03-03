@@ -1,4 +1,9 @@
 
+0.6.2 / 2016-03-xx 
+==================
+
+  * Changing the curl call. Now follow links (eg. the 301 code).
+
 0.6.1 / 2016-02-23 
 ==================
 
