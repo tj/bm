@@ -324,13 +324,13 @@ backupBm() {
 	fi
 }
 saveUrl() {
-	if [ "$(sed 's/^[[:space:]]*\(f\|ht\)tps*:\/\/.*$/totoz/' <<< "${__url}")" != 'totoz' ]; then
+	[[ "${__url}" =~ ^[[:space:]]*(f|ht)tps*://.*$ ]] || {
 		if [ ${__F:=0} -eq 0 ]; then
 			die "Your URL seems invalid '${__url}'. Use -F to force."
 		else
 			echo "Force adding invalid URL" >&2
 		fi
-	fi
+	}
 	local _sum="$(${_BM_CMD_MD5} <<< "${__url}")"
 	if [ ${_BM_DUPS_DETECT} = true ]; then
 		if [ ! -z "$(awk -F '|' '$0 !~ /^[ 	]*#/ && $1 ~ /'"${_sum%% *}"'/' "${_BM_BOOKMARK_FILE}")" ]; then
@@ -746,7 +746,7 @@ checkBinaries() {
 	grep -q "tata" "/tmp/sedtest.$$" && \
 	rc=0 && \
 	rm -f "/tmp/sedtest.$$" "/tmp/sedtest.$$.bak"
-	[[ ${rc} -ne 0 ]] && die "sed seems to not handle -i arguent properly, please check"
+	[[ ${rc} -ne 0 ]] && die "sed seems to not handle -i argument properly, please check"
 }
 
 #
