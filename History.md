@@ -1,8 +1,9 @@
 
-0.6.2 / 2016-03-xx 
+0.6.2 / 2016-03-08
 ==================
 
   * Changing the curl call. Now follow links (eg. the 301 code).
+  * Fix #18 : Issue with BM on Apple (related to readlink binary).
 
 0.6.1 / 2016-02-23 
 ==================
