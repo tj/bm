@@ -155,7 +155,7 @@ slug() {
 
 # version
 RELEASE='$Format:%h$'
-VERSION='0.6.2'
+VERSION='0.6.3'
 
 #
 # Output usage info
@@ -534,7 +534,7 @@ stats() {
 	readarray -t lines < "${_BM_BOOKMARK_FILE}"
 	echo "# of Bookmarks		: ${#lines[@]}"
 	echo "# of Duplicate		: $(awk -F'|' '$0 !~ /^[	 ]*#/ {print $1}' "${_BM_BOOKMARK_FILE}" |sort |uniq -d |wc -l)"
-	local tags="$(awk -F'|' '$0 !~ /^[ 	]*#/ {print $6}' "${_BM_BOOKMARK_FILE}" | sed -e 's/\([[:space:]]*,[[:space:]]*\)/\n/g')"
+	local tags="$(awk -F'|' '$0 !~ /^[ 	]*#/ {print $NF}' "${_BM_BOOKMARK_FILE}" | sed -e 's/\([[:space:]]*,[[:space:]]*\)/\n/g')"
 
 	echo "# of tags		: $( sort -u <<< "${tags,,}" |wc -l)"
 	echo "Top 14 tags used	:"
@@ -561,7 +561,7 @@ stats() {
 #
 
 list_tags() {
-	local tags="$(awk -F'|' '$0 !~ /^[ 	]*#/ {print $6}' "${_BM_BOOKMARK_FILE}" | sed -e 's/\([[:space:]]*,[[:space:]]*\)/\n/g')"
+	local tags="$(awk -F'|' '$0 !~ /^[ 	]*#/ {print $NF}' "${_BM_BOOKMARK_FILE}" | sed -e 's/\([[:space:]]*,[[:space:]]*\)/\n/g')"
 	local nli=0
 	(
 		sort <<< "${tags,,}" | uniq -c | sort -nr | while read n t; do
