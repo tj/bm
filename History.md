@@ -1,4 +1,9 @@
 
+0.6.3 / 2016-03-11
+==================
+
+  * Fix #20 : Issue with tags when a Title contains a comma. Stats are weird.
+
 0.6.2 / 2016-03-08
 ==================
 
