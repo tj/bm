@@ -1,4 +1,9 @@
 
+0.6.4 / 2016-03-xx
+==================
+
+  * Fix : When searching for a tag and Title contains |. Results were incorrect.
+
 0.6.3 / 2016-03-11
 ==================
 
