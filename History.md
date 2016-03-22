@@ -1,5 +1,5 @@
 
-0.6.4 / 2016-03-xx
+0.6.4 / 2016-03-22
 ==================
 
   * Fix : When searching for a tag and Title contains |. Results were incorrect.
