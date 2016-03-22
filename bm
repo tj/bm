@@ -155,7 +155,7 @@ slug() {
 
 # version
 RELEASE='$Format:%h$'
-VERSION='0.6.3'
+VERSION='0.6.4'
 
 #
 # Output usage info
@@ -400,7 +400,7 @@ search() {
 	[[ -z "${1:-}" ]] && list_bookmarks && return
 	case "${1:0:1}" in
 		:) _s=3; _ss=0 ;; # Accelerator
-		+) _s=6; _ss=1 ;; # Tags
+		+) _s="NF"; _ss=1 ;; # Tags
 		=) _s=1; _ss=1 ;; # MD5 part
 		/) _s=4; _ss=1 ;; # URL part
 		*) _s=0; _ss=0 ;; # full text search
