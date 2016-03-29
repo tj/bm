@@ -155,7 +155,7 @@ slug() {
 
 # version
 RELEASE='$Format:%h$'
-VERSION='0.6.4'
+VERSION='0.6.5'
 
 #
 # Output usage info
@@ -241,6 +241,8 @@ Usage: ${0} [modifier(s)] command [option(s)]
 	-L		List all tags
 
 	-C		Print the color table (usefull for configuration)
+
+	-E		Open the bm.lnk with your \$EDITOR
 
 	-S		Show statistics about bookmarks/tags (and also configuration)
 			Options for -S
@@ -342,7 +344,11 @@ saveUrl() {
 		fi
 	fi
 	if [ ${_BM_GET_PAGE_TITLE} = true -a -z "${__T:=}" ]; then
-		__T="$( curl -Lks "${__url}" 2>&1 | sed '/<title>/I!d;/<\/title>/I!d;s;^[[:space:]]*<title>\([^<]*\)<.*;\1;i' )"
+		if [ $( command -v hxselect &>/dev/null ) ]; then
+			__T="$( curl -Lks "${__url}" 2>&1 | hxselect -ic title )"
+		else
+			__T="$( curl -Lks "${__url}" 2>&1 | sed '/<title>/I!d;/<\/title>/I!d;s;^[[:space:]]*<title>\([^<]*\)<.*;\1;i' )"
+		fi
 	fi
 	[[ ! -z "${__T:=}" ]] && __T="${__T//\|/\\|}"
 	backupBm
@@ -515,6 +521,12 @@ delete_bookmark() {
 	else
 		die "You're not allowed to delete entries. Change the _BM_DELETE_ALLOWED to true !"
 	fi
+}
+
+edit_bookmark() {
+	echo -e "You're about to open your '${_BM_BOOKMARK_FILE}' file with your \$EDITOR.\n\n/!\ Press any key to continue, or CTRL+C to abort. /!\ "
+	read -n1 toto
+	${EDITOR:=vi} "${_BM_BOOKMARK_FILE}"
 }
 
 #
@@ -831,9 +843,9 @@ else
 # -g generate html file
 # -G use this file
 # -g -g generate 1 file per tags
-        # used      : Aa-bCcDd--F-GgHh-i----Ll--NnOoPp---rSsTt--Vv-wXxY--z----------
-        # available : --B-----Ee-f----I-JjKk--Mm------QqR-----Uu--W----yZ-0123456789
-	while getopts ":a:A:b:c:d:G:o:P:r:s:t:T:w:x:CDFghHilLnNOpPSvVXYz" option; do
+        # used      : Aa-bCcDdE-F-GgHh-i----Ll--NnOoPp---rSsTt--Vv-wXxY--z----------
+        # available : --B------e-f----I-JjKk--Mm------QqR-----Uu--W----yZ-0123456789
+	while getopts ":a:A:b:c:d:G:o:P:r:s:t:T:w:x:CDEFghHilLnNOpPSvVXYz" option; do
 		case ${option} in
 			a) __a=1; __url="${OPTARG}";;	# Add url to bookmark
 			A) __A="${OPTARG}";;	# AcceleratoR
@@ -842,6 +854,7 @@ else
 			C) __C=1;;		# Print color table
 			d) __d=1; __del="${OPTARG}";;	# Config file
 			D) __D=1;;		# Print color table
+			E) __E=1;;		# Open the bm.lnk file with the $EDITOR
 			F) __F=1;;		# Force the add or delete or picture
 			g) (( __g++ ));;	# generate html file(s)
 			G) __G=1; __file="${OPTARG}";;	# Generate this file (only for g=1)
@@ -900,8 +913,8 @@ fi
 [[ ${#} -eq 0 && ${_BM_NO_ARGS_FORCE_HELP} = true ]] && { usage ; exit; }
 
 # Only one action at a time
-if [ $(( ${__a:=0} + ${__C:=0} + ${__d:=0} + ${__g:=0} + ${__l:=0} + ${__L:=0} + ${__o:=0} + ${__P:=0} + ${__r:=0} + ${__s:=0} + ${__S:=0} + ${__x:=0} )) -gt 1 ]; then
-        echo "You have to choose between -a, -C, -d, -g, -l, -L, -o, -P, -r, -s, -S, -x" >&2
+if [ $(( ${__a:=0} + ${__C:=0} + ${__d:=0} + ${__E:=0} + ${__g:=0} + ${__l:=0} + ${__L:=0} + ${__o:=0} + ${__P:=0} + ${__r:=0} + ${__s:=0} + ${__S:=0} + ${__x:=0} )) -gt 1 ]; then
+        echo "You have to choose between -a, -C, -d, -E, -g, -l, -L, -o, -P, -r, -s, -S, -x" >&2
         echo "Use -h for help" >&2
 	exit 0
 fi
@@ -924,6 +937,7 @@ fi
 [[ ${__s} -eq 1 ]] && { search_bookmarks "${__search}" ; exit; }
 [[ ${__S} -eq 1 ]] && { stats ; exit; }
 [[ ${__x} -eq 1 ]] && { copy_bookmark "${__copy}" ; exit; }
+[[ ${__E} -eq 1 ]] && { edit_bookmark ; exit; }
 search
 
 # $Format:%cn @ %cD$ : $Id$

@@ -1,4 +1,10 @@
 
+0.6.5 / 2016-03-xx
+==================
+
+  * In some case, the sed operation to grab the title is not working. For those who have `hxselect` installed, it should always work.
+  * With `-E` the bm.lnk file is open with your $EDITOR (default is vi).
+
 0.6.4 / 2016-03-22
 ==================
 
