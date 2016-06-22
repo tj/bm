@@ -7,6 +7,7 @@
   accelerator, tags, Screenshots, configuration file, backup, and also
   generate a HTML file with bookmarks and Screenshots.
 
+  **/!\ : version prior to v0.6.6 had a bug when deleting. Don't use the delete function or update !**  
   If you upgrade from a version prior to v0.6.0, read at the end.
 
   ![](http://cl.ly/FREx/Screen%20Shot%202012-03-29%20at%2011.15.14%20PM.png)
