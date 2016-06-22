@@ -32,19 +32,22 @@ config() {
 	#echo "Reading Configuration..." >&2
 	[[ "${__w:=$HOME}" != "${HOME}" ]] && echo "Working dir changed to ${__w}"
 	[[ "${__w: -1}" != '/' ]] && __w="${__w//\/\//\/}/"
-	# If a config file is given, we take it first, or look for a default config file
-	export _BM_CONFIG_FILE="${__w}${_BM_DEFAULT_CONFIG_FILENAME}"
-	if [ "$(uname -s)" = 'Linux' -a -f "$(readlink -m "${1:-}" 2>/dev/null)" ]; then
-		export _BM_CONFIG_FILE="${1}"
-		. "${1}"
-	elif [ -e "${1}" ]; then
-		export _BM_CONFIG_FILE="${1}"
-		. "${1}"
-	elif [ ${__n:=0} -eq 0 -a -f "${__w}${_BM_DEFAULT_CONFIG_FILENAME}" ]; then
-		. "${__w}${_BM_DEFAULT_CONFIG_FILENAME}"
-		#echo "Default config file loaded ${__w}${_BM_DEFAULT_CONFIG_FILENAME}"
+	if [ ${__B:=0} -eq 0 ]; then
+		# If a config file is given, we take it first, or look for a default config file
+		export _BM_CONFIG_FILE="${__w}${_BM_DEFAULT_CONFIG_FILENAME}"
+		if [ "$(uname -s)" = 'Linux' -a -f "$(readlink -m "${1:-}" 2>/dev/null)" ]; then
+			export _BM_CONFIG_FILE="${1}"
+			. "${1}"
+		elif [ -e "${1}" ]; then
+			export _BM_CONFIG_FILE="${1}"
+			. "${1}"
+		elif [ ${__n:=0} -eq 0 -a -f "${__w}${_BM_DEFAULT_CONFIG_FILENAME}" ]; then
+			. "${__w}${_BM_DEFAULT_CONFIG_FILENAME}"
+			#echo "Default config file loaded ${__w}${_BM_DEFAULT_CONFIG_FILENAME}"
+		fi
+	else
+		export _BM_CONFIG_FILE='none'
 	fi
-
 	# _BM_BOOKMARK_FILE : Where is stored the bookmark file
 	export _BM_BOOKMARK_FILE="${_BM_BOOKMARK_FILE:=${__w}bm.lnk}"
 
@@ -155,7 +158,7 @@ slug() {
 
 # version
 RELEASE='$Format:%h$'
-VERSION='0.6.5'
+VERSION='0.6.6'
 
 #
 # Output usage info
@@ -553,8 +556,8 @@ delete_bookmark() {
 				echo "${_nl}" >> "${_BM_DELETE_FILE}"
 			fi
 			[[ ${_BM_DELETE_PICTURE} = true || ${__p:=0} -eq 1 ]] && rm -f -- "${_BM_SCREENSHOT_DIRECTORY}/${_nl%%|*}.png"
-			_nl="${_nl//\|/\\|}"
-			sed -i -e '/'"${_nl//\//\\/}"'/d' "${_BM_BOOKMARK_FILE}"
+			IFS='|' read m d a u T t <<< "${_nl}"
+			sed -i -e '/^'"${m}.*${u//\//\\/}.*${t//\//\\/}"'$/d' "${_BM_BOOKMARK_FILE}"
 		done <<< "$(echo -e "${_lines}")"
 	else
 		die "You're not allowed to delete entries. Change the _BM_DELETE_ALLOWED to true !"
@@ -881,13 +884,14 @@ else
 # -g generate html file
 # -G use this file
 # -g -g generate 1 file per tags
-        # used      : Aa-bCcDdE-F-GgHh-i----Ll--NnOoPp-q-rSsTt--Vv-wXxY--z----------
-        # available : --B------e-f----I-JjKk--Mm------Q-R-----Uu--W----yZ-0123456789
-	while getopts ":a:A:b:c:d:G:o:P:q:r:s:t:T:w:x:CDEFghHilLnNOpPSvVXYz" option; do
+        # used      : AaBbCcDdE-F-GgHh-i----Ll--NnOoPp-q-rSsTt--Vv-wXxY--z----------
+        # available : ---------e-f----I-JjKk--Mm------Q-R-----Uu--W----yZ-0123456789
+	while getopts ":a:A:b:c:d:G:o:P:q:r:s:t:T:w:x:BCDEFghHilLnNOpPSvVXYz" option; do
 		case ${option} in
 			a) __a=1; __url="${OPTARG}";;	# Add url to bookmark
 			A) __A="${OPTARG}";;	# AcceleratoR
 			b) __b="${OPTARG}";;	# Bookmark file
+			B) __B=1;;		# Don't load the default config file
 			c) __c="${OPTARG}";;	# Config file
 			C) __C=1;;		# Print color table
 			d) __d=1; __del="${OPTARG}";;	# Config file
@@ -937,6 +941,7 @@ if [ ! -z "${__w:=}" -a ! -d "${__w}" ]; then
 fi
 # Loading config
 config "${__c}"
+[[ ! -z "${__b:=}" ]] && export _BM_BOOKMARK_FILE="${__b}"
 
 # Following config, we maybe not have to check the capture tool
 [[ ${_BM_CMD_CAPTURE_CHECK} ]] && checkBinaries "${_BM_CMD_CAPTURE}"
