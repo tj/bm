@@ -158,7 +158,7 @@ slug() {
 
 # version
 RELEASE='$Format:%h$'
-VERSION='0.6.5'
+VERSION='0.6.6'
 
 #
 # Output usage info
@@ -556,8 +556,8 @@ delete_bookmark() {
 				echo "${_nl}" >> "${_BM_DELETE_FILE}"
 			fi
 			[[ ${_BM_DELETE_PICTURE} = true || ${__p:=0} -eq 1 ]] && rm -f -- "${_BM_SCREENSHOT_DIRECTORY}/${_nl%%|*}.png"
-			_nl="${_nl//\|/\\|}"
-			sed -i -e '/'"${_nl//\//\\/}"'/d' "${_BM_BOOKMARK_FILE}"
+			IFS='|' read m d a u T t <<< "${_nl}"
+			sed -i -e '/^'"${m}.*${u//\//\\/}.*${t//\//\\/}"'$/d' "${_BM_BOOKMARK_FILE}"
 		done <<< "$(echo -e "${_lines}")"
 	else
 		die "You're not allowed to delete entries. Change the _BM_DELETE_ALLOWED to true !"
