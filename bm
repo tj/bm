@@ -158,7 +158,7 @@ slug() {
 
 # version
 RELEASE='$Format:%h$'
-VERSION='0.6.6'
+VERSION='0.6.7'
 
 #
 # Output usage info
@@ -327,7 +327,7 @@ getAccelMax() {
 }
 
 backupBm() {
-	if [ ${_BM_BOOKMARK_BACKUP} = true ]; then
+	if [ "${_BM_BOOKMARK_BACKUP,,}" = 'true' ]; then
 		while [ ${count:=${_BM_BOOKMARK_BACKUP_VERSION}} -gt 0 ]; do
 		cp -- "${_BM_BOOKMARK_BACKUP_FILE}.$(( count-1 ))" "${_BM_BOOKMARK_BACKUP_FILE}.$(( count-- ))" 2>&1 >/dev/null
 		done
@@ -352,7 +352,7 @@ saveUrl() {
 		fi
 	}
 	local _sum="$(${_BM_CMD_MD5} <<< "${__url}")"
-	if [ ${_BM_DUPS_DETECT} = true ]; then
+	if [ "${_BM_DUPS_DETECT,,}" = 'true' ]; then
 		if [ ! -z "$(awk -F '|' '$0 !~ /^[ 	]*#/ && $1 ~ /'"${_sum%% *}"'/' "${_BM_BOOKMARK_FILE}")" ]; then
 			if [ ${__F:=0} -eq 0 ]; then
 				die "URL is already in the Bookmark file"
@@ -361,7 +361,7 @@ saveUrl() {
 			fi
 		fi
 	fi
-	if [ ${_BM_GET_PAGE_TITLE} = true -a -z "${__T:=}" ]; then
+	if [ "${_BM_GET_PAGE_TITLE,,}" = 'true' -a -z "${__T:=}" ]; then
 #		if [ $( command -v hxselect &>/dev/null ) ]; then
 #			__T="$( curl -Lks "${__url}" 2>&1 | hxselect -ic title )"
 #		else
@@ -378,7 +378,7 @@ saveUrl() {
 	echo "${_sum%% *}|$(date '+%FT%TZ')|${__A}|${__url}|${__T}|${__t}" >> "${_BM_BOOKMARK_FILE}" || die "Insert aborted into '${_BM_BOOKMARK_FILE}' !"
 	echo "${__url} inserted into '${_BM_BOOKMARK_FILE}'"
 	[[ ! -f "${_BM_SCREENSHOT_DIRECTORY}/${_sum%% *}.png" || ${__F:=0} -eq 1 ]] && { screenshot_take "${_BM_SCREENSHOT_DIRECTORY}/${_sum%% *}.png" "${__url}" & }
-	[[ ${_BM_SCREENSHOT_WAIT} = true ]] && wait
+	[[ "${_BM_SCREENSHOT_WAIT,,}" = 'true' ]] && wait
 	search_bookmarks "${__A}"
 }
 
@@ -430,7 +430,7 @@ search() {
 		/) _s=4; _ss=1 ;; # URL part
 		*) _s=0; _ss=0 ;; # full text search
 	esac
-	[[ ${_BM_SEARCH_IGNORECASE} = true || ${__i:=0} -eq 1 ]] && local _ign=1
+	[[ "${_BM_SEARCH_IGNORECASE,,}" = 'true' || ${__i:=0} -eq 1 ]] && local _ign=1
 	awk -F'|' -vIgn=${_ign:=0} '
 		BEGIN {
 			if (Ign == 1) { s=tolower("'"${1:${_ss}}"'"); } else { s="'"${1:${_ss}}"'"; }
@@ -451,7 +451,7 @@ search_bookmarks() {
 
 recorded_picture() {
 	local _lines="$(search "${@}")"
-	if [ ${_BM_ASK_BEFORE_OPEN} = true -a ${__O:=0} -eq 0 -a ${__Y:=0} -eq 0 ]; then
+	if [ "${_BM_ASK_BEFORE_OPEN,,}" = 'true' -a ${__O:=0} -eq 0 -a ${__Y:=0} -eq 0 ]; then
 		if [ $(wc -l <<< "${_lines}") -gt 1 ]; then
 			read -p"More than one URL found. Open all Pictures ? [Y/N] : " -n1 _answer
 			[[ "${_answer,,}" != 'y' ]] && die "\nUse -O to force the first URL or refine your search"
@@ -461,19 +461,19 @@ recorded_picture() {
 	echo ''
 	while read _nl; do
 		readLines <<< "${_nl}"
-		if [ ${_BM_OPEN_ALL} = true -o ${__Y:=0} -eq 1 ]; then
+		if [ "${_BM_OPEN_ALL,,}" = 'true' -o ${__Y:=0} -eq 1 ]; then
 			_all="${_BM_SCREENSHOT_DIRECTORY}/$(awk -F'|' '{print $1}' <<< "${_nl}").png ${_all}"
 		else
 			"${_BM_CMD_IMAGE_OPEN}" "${_BM_SCREENSHOT_DIRECTORY}/$(awk -F'|' '{print $1}' <<< "${_nl}").png"
-			[[ ${_BM_OPEN_FIRST} = true || ${__O:=0} -eq 1 ]] && exit 0
+			[[ "${_BM_OPEN_FIRST,,}" = 'true' || ${__O:=0} -eq 1 ]] && exit 0
 		fi
 	done <<< "$(echo -e "${_lines}")"
-	[[ ${_BM_OPEN_ALL} = true || ${__Y:=0} -eq 1 ]]	&& "${_BM_CMD_IMAGE_OPEN}" "${_all}"
+	[[ "${_BM_OPEN_ALL,,}" = 'true' || ${__Y:=0} -eq 1 ]]	&& "${_BM_CMD_IMAGE_OPEN}" "${_all}"
 }
 
 download_title() {
 	local _lines="$(search "${@}")"
-	if [ ${_BM_ASK_BEFORE_OPEN} = true -a ${__O:=0} -eq 0 -a ${__Y:=0} -eq 0 ]; then
+	if [ "${_BM_ASK_BEFORE_OPEN,,}" = 'true' -a ${__O:=0} -eq 0 -a ${__Y:=0} -eq 0 ]; then
 		if [ $(wc -l <<< "${_lines}") -gt 1 ]; then
 			read -p"More than one URL found. Download Title for all URLs ? [Y/N] : " -n1 _answer
 			[[ "${_answer,,}" != 'y' ]] && die "\nUse -O to force the first URL or refine your search"
@@ -484,18 +484,18 @@ download_title() {
 	while read _nl; do
 		readLines <<< "${_nl}"
 		local u="$(awk -F'|' '{print $4}' <<< "${_nl}")"
-		if [ ${_BM_OPEN_ALL} = true -o ${__Y:=0} -eq 1 ]; then
+		if [ "${_BM_OPEN_ALL,,}" = 'true' -o ${__Y:=0} -eq 1 ]; then
 			echo "${u} --> $( titleDl "${u}" )"
 		else
 			echo "${u} --> $( titleDl "${u}" )"
-			[[ ${_BM_OPEN_FIRST} = true || ${__O:=0} -eq 1 ]] && exit 0
+			[[ "${_BM_OPEN_FIRST,,}" = 'true' || ${__O:=0} -eq 1 ]] && exit 0
 		fi
 	done <<< "$(echo -e "${_lines}")"
 }
 
 open_bookmark() {
 	local _lines="$(search "${@}")"
-	if [ ${_BM_ASK_BEFORE_OPEN} = true -a ${__O:=0} -eq 0 -a ${__Y:=0} -eq 0 ]; then
+	if [ "${_BM_ASK_BEFORE_OPEN,,}" = 'true' -a ${__O:=0} -eq 0 -a ${__Y:=0} -eq 0 ]; then
 		if [ $(wc -l <<< "${_lines}") -gt 1 ]; then
 			read -p"More than one URL found. Open all ? [Y/N] : " -n1 _answer
 			[[ "${_answer,,}" != 'y' ]] && die "\nUse -O to force the first URL or refine your search"
@@ -504,19 +504,19 @@ open_bookmark() {
 	local _all=''
 	while read _nl; do
 		readLines <<< "${_nl}"
-		if [ ${_BM_OPEN_ALL} = true -o ${__Y:=0} -eq 1 ]; then
+		if [ "${_BM_OPEN_ALL,,}" = 'true' -o ${__Y:=0} -eq 1 ]; then
 			_all="$(awk -F'|' '{print $4}' <<< "${_nl}") ${_all}"
 		else
 			"${_BM_CMD_OPEN}" "$(awk -F'|' '{print $4}' <<< "${_nl}")"
-			[[ ${_BM_OPEN_FIRST} = true || ${__O:=0} -eq 1 ]] && exit 0
+			[[ "${_BM_OPEN_FIRST,,}" = 'true' || ${__O:=0} -eq 1 ]] && exit 0
 		fi
 	done <<< "$(echo -e "${_lines}")"
-	[[ ${_BM_OPEN_ALL} = true || ${__Y:=0} -eq 1 ]]	&& "${_BM_CMD_OPEN}" "${_all}"
+	[[ "${_BM_OPEN_ALL,,}" = 'true' || ${__Y:=0} -eq 1 ]]	&& "${_BM_CMD_OPEN}" "${_all}"
 }
 
 copy_bookmark() {
 	local _lines="$(search "${@}")"
-	if [ ${_BM_ASK_BEFORE_OPEN} = true -a ${__X:=0} -eq 0 -a ${__Y:=0} -eq 0 ]; then
+	if [ "${_BM_ASK_BEFORE_OPEN,,}" = 'true' -a ${__X:=0} -eq 0 -a ${__Y:=0} -eq 0 ]; then
 		if [ $(wc -l <<< "${_lines}") -gt 1 ]; then
 			read -p"More than one URL found. Copy all ? [Y/N] : " -n1 _answer
 			[[ "${_answer,,}" != 'y' ]] && die "\nUse -X to force the first URL or refine your search"
@@ -525,24 +525,24 @@ copy_bookmark() {
 	local _all=''
 	while read _nl; do
 		readLines <<< "${_nl}"
-		if [ ${_BM_OPEN_ALL} = true -o ${__Y:=0} -eq 1 ]; then
+		if [ "${_BM_OPEN_ALL,,}" = 'true' -o ${__Y:=0} -eq 1 ]; then
 			_all="$(awk -F'|' '{print $4}' <<< "${_nl}") ${_all}"
 		else
 			awk -F'|' '{print $4}' <<< "${_nl}" | "${_BM_CMD_COPY}"
 			awk -F'|' '{print $4}' <<< "${_nl}" | "${_BM_CMD_COPY}" -b
-			[[ ${_BM_OPEN_FIRST} = true || ${__X:=0} -eq 1 ]] && exit 0
+			[[ "${_BM_OPEN_FIRST,,}" = 'true' || ${__X:=0} -eq 1 ]] && exit 0
 		fi
 	done <<< "$(echo -e "${_lines}")"
-	[[ ${_BM_OPEN_ALL} = true || ${__Y:=0} -eq 1 ]]	&& "${_BM_CMD_COPY}" <<< "${_all}"
-	[[ ${_BM_OPEN_ALL} = true || ${__Y:=0} -eq 1 ]]	&& "${_BM_CMD_COPY}" -b <<< "${_all}"
+	[[ "${_BM_OPEN_ALL,,}" = 'true' || ${__Y:=0} -eq 1 ]]	&& "${_BM_CMD_COPY}" <<< "${_all}"
+	[[ "${_BM_OPEN_ALL,,}" = 'true' || ${__Y:=0} -eq 1 ]]	&& "${_BM_CMD_COPY}" -b <<< "${_all}"
 }
 
 delete_bookmark() {
 	[[ -z "${@//[ 	]/}" ]] && die "You MUST give an argument !"
 	local _lines="$(search "${@}")"
-	if [ ${_BM_DELETE_ALLOWED} = true  ]; then
+	if [ "${_BM_DELETE_ALLOWED,,}" = 'true'  ]; then
 		while read _nl; do readLines <<< "${_nl}"; done <<< "$(echo -e "${_lines}")"
-		if [ ${_BM_ASK_BEFORE_OPEN} = true -a ${__D:=0} -eq 0 -a ${__Y:=0} -eq 0 ]; then
+		if [ "${_BM_ASK_BEFORE_OPEN,,}" = 'true' -a ${__D:=0} -eq 0 -a ${__Y:=0} -eq 0 ]; then
 			if [ $(wc -l <<< "${_lines}") -ge 1 ]; then
 				read -p"You're about to delete entry(ies). Ready ? [Y/N] : " -n1 _answer
 				[[ "${_answer,,}" != 'y' ]] && die "\nUse -D to force the backup if not configured."
@@ -552,10 +552,10 @@ delete_bookmark() {
 		backupBm
 		local _all=''
 		while read _nl; do
-			if [ ${_BM_DELETE_TO_FILE} = true -o ${__D:=0} -eq 1 ]; then
+			if [ "${_BM_DELETE_TO_FILE,,}" = 'true' -o ${__D:=0} -eq 1 ]; then
 				echo "${_nl}" >> "${_BM_DELETE_FILE}"
 			fi
-			[[ ${_BM_DELETE_PICTURE} = true || ${__p:=0} -eq 1 ]] && rm -f -- "${_BM_SCREENSHOT_DIRECTORY}/${_nl%%|*}.png"
+			[[ "${_BM_DELETE_PICTURE,,}" = 'true' || ${__p:=0} -eq 1 ]] && rm -f -- "${_BM_SCREENSHOT_DIRECTORY}/${_nl%%|*}.png"
 			IFS='|' read m d a u T t <<< "${_nl}"
 			sed -i -e '/^'"${m}.*${u//\//\\/}.*${t//\//\\/}"'$/d' "${_BM_BOOKMARK_FILE}"
 		done <<< "$(echo -e "${_lines}")"
@@ -706,7 +706,7 @@ EOF
 #
 
 screenshot_take() {
-	if [ ${_BM_SCREENSHOT_GET} = true -o ${__p:=0} -eq 1 ]; then
+	if [ "${_BM_SCREENSHOT_GET,,}" = 'true' -o ${__p:=0} -eq 1 ]; then
 		[[ ! -d "${_BM_SCREENSHOT_DIRECTORY}" ]] && { mkdir -p "${_BM_SCREENSHOT_DIRECTORY}" || die "Can't create thumbnail directory." ; }
 		[[ ! -z "${_BM_CMD_PRE_CAPTURE}" ]] && { local _pre="${_BM_CMD_PRE_CAPTURE//\{FILE\}/${1}}"; _pre="${_pre//\{URL\}/${2}}"; ${_pre} ; }
 		local _cmd="${_BM_CMD_CAPTURE//\{FILE\}/${1}}"; _cmd="${_cmd//\{URL\}/${2}}";
@@ -720,11 +720,11 @@ picturize() {
 	if [ -z "${1:-}" ]; then
 		awk -F'|' '$0 !~ /^[  ]*#/ {print $1,$4;}' "${_BM_BOOKMARK_FILE}" | while read m u; do
 			[[ ! -f "${_BM_SCREENSHOT_DIRECTORY}/${m}.png" || ${__F:=0} -eq 1 ]] && { screenshot_take "${_BM_SCREENSHOT_DIRECTORY}/${m}.png" "${u}" & }
-			[[ ${_BM_SCREENSHOT_WAIT} = true ]] && wait
+			[[ "${_BM_SCREENSHOT_WAIT,,}" = 'true' ]] && wait
 		done
 	else
 		local _lines="$(search "${@}")"
-		if [ ${_BM_ASK_BEFORE_OPEN} = true -a ${__O:=0} -eq 0 -a ${__Y:=0} -eq 0 ]; then
+		if [ "${_BM_ASK_BEFORE_OPEN,,}" = 'true' -a ${__O:=0} -eq 0 -a ${__Y:=0} -eq 0 ]; then
 			if [ $(wc -l <<< "${_lines}") -gt 1 ]; then
 				read -p"More than one URL found. Open all ? [Y/N] : " -n1 _answer
 				[[ "${_answer,,}" != 'y' ]] && die "\nUse -O to force the first URL or refine your search"
@@ -733,13 +733,13 @@ picturize() {
 		local _all=''
 		while read _nl; do
 			readLines <<< "${_nl}"
-			if [ ${_BM_OPEN_ALL} = true -o ${__Y:=0} -eq 1 ]; then
+			if [ "${_BM_OPEN_ALL,,}" = 'true' -o ${__Y:=0} -eq 1 ]; then
 				IFS='|' read m d a u b  <<< "${_nl}"
 				screenshot_take "${_BM_SCREENSHOT_DIRECTORY}/${m}.png" "${u}" &
 			else
 				IFS='|' read m d a u b  <<< "${_nl}"
 				screenshot_take "${_BM_SCREENSHOT_DIRECTORY}/${m}.png" "${u}" &
-				[[ ${_BM_OPEN_FIRST} = true || ${__O:=0} -eq 1 ]] && exit 0
+				[[ "${_BM_OPEN_FIRST,,}" = 'true' || ${__O:=0} -eq 1 ]] && exit 0
 			fi
 		done <<< "$(echo -e "${_lines}")"
 	fi
@@ -850,8 +850,8 @@ if [[ ${1:-} =~ ${_regex} ]]; then
                 tags) __L=1 ;;
                 ls|list) __l=1 ;;
                 search) __s=1; __search="${@:2}" ;;
-                open) open_bookmark "${@:2}" ;;
-                add) __a=1; __url="${1:-}"; __T="${2:-}"; __t="${3:-}"; __A="${4:-}"; saveUrl; exit ;;
+                open) __o=1; __open="${@:2}";;
+                add) __a=1; __url="${2:-}"; __T="${3:-}"; __t="${4:-}"; __A="${5:-}";;
                 view) __r=1; __search="${@:2}" ;;
 		stats|statistics) __S=1 ;;
 		clear) die "This now a deprecated feature. Use -d instead." ;;
@@ -947,14 +947,14 @@ config "${__c}"
 [[ ${_BM_CMD_CAPTURE_CHECK} ]] && checkBinaries "${_BM_CMD_CAPTURE}"
 
 # If no bookmark file exist, create one if allowed
-if [ ! -f "${_BM_BOOKMARK_FILE}" -a ${_BM_CREATE_BOOKMARK_FILE} = true ]; then
+if [ ! -f "${_BM_BOOKMARK_FILE}" -a "${_BM_CREATE_BOOKMARK_FILE,,}" = 'true' ]; then
 	# Remember fields : 1=md5, 2=accel, 3=url, 4=title, 5=tags, 6=date of bookmark
 	echo "bd8b3eff7fa82a0382a3e7576c5363b6|$(date '+%FT%TZ')|:bm|https://github.com/Flyounet/bm/|bm a cool enhanced bookmark tool for your console|default,shell" >> "${_BM_BOOKMARK_FILE}"
 	echo "2981b5cae113491ddb18e0d51454f0d9|$(date '+%FT%TZ')|:bmtj|https://github.com/tj/bm/|The original bm : a cool bookmark tool for your console|default,shell" >> "${_BM_BOOKMARK_FILE}"
 fi
 
 # Starting to work with args. If none probably list...
-[[ ${#} -eq 0 && ${_BM_NO_ARGS_FORCE_HELP} = true ]] && { usage ; exit; }
+[[ ${#} -eq 0 && "${_BM_NO_ARGS_FORCE_HELP,,}" = 'true' ]] && { usage ; exit; }
 
 # Only one action at a time
 if [ $(( ${__a:=0} + ${__C:=0} + ${__d:=0} + ${__E:=0} + ${__g:=0} + ${__l:=0} + ${__L:=0} + ${__o:=0} + ${__P:=0} + ${__q:=0} + ${__r:=0} + ${__s:=0} + ${__S:=0} + ${__x:=0} )) -gt 1 ]; then
