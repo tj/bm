@@ -392,7 +392,7 @@ readLines() {
 		_line="${_BM_PRINT_LINE}"
 		[[ ${__z:=0} -eq 1 ]] && _line="${_BM_PRINT_LINE_ALTERNATIVE}"
 		_line="${_line//BM_MD5/$m}"
-		if [ ${_BM_PRINT_SCHEME} = false ]; then
+		if [ "${_BM_PRINT_SCHEME,,}" = 'false' ]; then
 			u="$(sed 's/^[[:space:]]*\(f\|ht\)tps*:\/\///' <<< "${u}")"
 		fi
 		_line="${_line//BM_URL/$u}"
