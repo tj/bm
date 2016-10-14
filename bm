@@ -948,7 +948,7 @@ config "${__c}"
 
 # If no bookmark file exist, create one if allowed
 if [ ! -f "${_BM_BOOKMARK_FILE}" -a "${_BM_CREATE_BOOKMARK_FILE,,}" = 'true' ]; then
-	# Remember fields : 1=md5, 2=accel, 3=url, 4=title, 5=tags, 6=date of bookmark
+	# Remember fields : 1=md5, 2=date, 2=accel, 3=url, 4=title, 5=tags
 	echo "bd8b3eff7fa82a0382a3e7576c5363b6|$(date '+%FT%TZ')|:bm|https://github.com/Flyounet/bm/|bm a cool enhanced bookmark tool for your console|default,shell" >> "${_BM_BOOKMARK_FILE}"
 	echo "2981b5cae113491ddb18e0d51454f0d9|$(date '+%FT%TZ')|:bmtj|https://github.com/tj/bm/|The original bm : a cool bookmark tool for your console|default,shell" >> "${_BM_BOOKMARK_FILE}"
 fi
