@@ -131,7 +131,7 @@ config() {
 		export _BM_CMD_CAPTURE_ARGS='-C -o {FILE}.png {URL}'
 		export _BM_CMD_POST_CAPTURE='cp -- "{FILE}-clipped.png" "{FILE}" ; rm -f -- {FILE}-{clipped,full,thumb}.png'
 		export _BM_CMD_MD5='md5'
-		export _BM_CMD_COPY='xsel'
+		export _BM_CMD_COPY='pbcopy'
 	fi
 
 	# _BM_PRINT_LINE : This line is used to print datas
